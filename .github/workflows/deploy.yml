@@ -1,4 +1,4 @@
-name: CLC RPG
+name: Deploy CLC RPG to GitHub Pages
 
 on:
   push:
