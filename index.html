@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1020" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="CLC RPG" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <title>CLC 270+ RPG</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+:root{
+  --bg:#070b16;--panel:#0f172a;--panel2:#111c35;--line:#22304f;--text:#f8fafc;--muted:#94a3b8;
+  --violet:#8b5cf6;--violet2:#c4b5fd;--gold:#f59e0b;--green:#22c55e;--red:#ef4444;--cyan:#22d3ee;
+  --blue:#3b82f6;--pink:#ec4899;--shadow:0 18px 40px rgba(0,0,0,.28);--r:22px
+}
+*{box-sizing:border-box} html{background:var(--bg)} body{margin:0;background:
+radial-gradient(circle at 10% -10%,rgba(139,92,246,.28),transparent 35%),
+radial-gradient(circle at 100% 0%,rgba(34,211,238,.12),transparent 28%),
+var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+button,input,select,textarea{font:inherit} button{cursor:pointer}
+.app{max-width:760px;margin:auto;min-height:100vh;padding:0 14px 100px}
+.topbar{position:sticky;top:0;z-index:20;padding:calc(10px + env(safe-area-inset-top)) 2px 10px;
+background:linear-gradient(180deg,rgba(7,11,22,.97),rgba(7,11,22,.86),transparent);backdrop-filter:blur(10px)}
+.brand{display:flex;align-items:center;justify-content:space-between}.brand h1{font-size:18px;margin:0;letter-spacing:.2px}
+.brand small{display:block;color:var(--muted);font-weight:500;margin-top:2px}
+.avatar{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--violet),var(--cyan));display:grid;place-items:center;
+font-weight:900;box-shadow:0 8px 22px rgba(139,92,246,.32)}
+.page{display:none}.page.active{display:block}
+.grid{display:grid;gap:12px}.grid2{grid-template-columns:1fr 1fr}
+.card{background:linear-gradient(180deg,rgba(17,28,53,.96),rgba(15,23,42,.96));border:1px solid var(--line);border-radius:var(--r);
+padding:15px;box-shadow:var(--shadow)}
+.hero{background:linear-gradient(135deg,rgba(124,58,237,.44),rgba(15,23,42,.95) 58%,rgba(34,211,238,.11));overflow:hidden;position:relative}
+.hero:after{content:"⚖️";position:absolute;right:-8px;bottom:-30px;font-size:118px;opacity:.07;transform:rotate(-8deg)}
+.row{display:flex;gap:10px;align-items:center}.between{justify-content:space-between}.wrap{flex-wrap:wrap}
+.muted{color:var(--muted)} .tiny{font-size:11px}.small{font-size:13px}.big{font-size:28px;font-weight:900;line-height:1}
+.kpi{padding:13px;border:1px solid var(--line);background:rgba(7,11,22,.38);border-radius:18px}
+.kpi .v{font-size:21px;font-weight:900;margin-top:5px}.kpi .l{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:800}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:999px;background:rgba(139,92,246,.14);border:1px solid rgba(196,181,253,.22);
+font-size:11px;font-weight:800;color:#ddd6fe}
+.badge.gold{background:rgba(245,158,11,.13);color:#fde68a;border-color:rgba(245,158,11,.22)}
+.badge.green{background:rgba(34,197,94,.13);color:#bbf7d0;border-color:rgba(34,197,94,.24)}
+.sectionTitle{font-size:13px;color:#cbd5e1;font-weight:900;letter-spacing:.8px;text-transform:uppercase;margin:18px 4px 9px}
+.progress{height:10px;background:#081020;border:1px solid #1f2a44;border-radius:999px;overflow:hidden}.progress>i{display:block;height:100%;
+background:linear-gradient(90deg,var(--violet),var(--cyan));border-radius:inherit;width:0;transition:.3s}
+.questMain{border:1px solid rgba(245,158,11,.28);background:linear-gradient(135deg,rgba(245,158,11,.11),rgba(17,28,53,.95))}
+.questMain h2{font-size:20px;margin:5px 0}.questMain .goal{color:#fde68a;font-weight:800;line-height:1.45}
+.primary,.secondary,.danger,.ghost{border:0;border-radius:13px;padding:10px 13px;font-weight:900}
+.primary{background:linear-gradient(135deg,var(--violet),#6d28d9);color:white;box-shadow:0 8px 18px rgba(139,92,246,.25)}
+.secondary{background:#17233e;color:#dbeafe;border:1px solid #2c3e63}.danger{background:rgba(239,68,68,.12);color:#fecaca;border:1px solid rgba(239,68,68,.25)}
+.ghost{background:transparent;color:#cbd5e1;border:1px solid var(--line)}
+.primary:active,.secondary:active,.danger:active,.ghost:active{transform:scale(.98)}
+.habits{display:grid;gap:8px}.habit{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:10px;padding:10px 11px;border-radius:16px;
+background:rgba(7,11,22,.38);border:1px solid #1d2a47;transition:.2s}.habit.done{border-color:rgba(34,197,94,.42);background:rgba(34,197,94,.07)}
+.habitIcon{width:39px;height:39px;border-radius:13px;background:#14203a;display:grid;place-items:center;font-size:20px}
+.habitName{font-weight:800;font-size:13px}.habitMeta{font-size:10px;color:var(--muted);margin-top:3px}
+.check{width:31px;height:31px;border:1px solid #344767;background:#0b1326;border-radius:11px;color:white;display:grid;place-items:center;font-weight:900}
+.habit.done .check{background:var(--green);border-color:var(--green);color:#052e16}
+.revision{border-left:4px solid var(--cyan)} .revision h3{margin:3px 0 5px;font-size:17px}
+.input,select,textarea{width:100%;background:#091226;color:var(--text);border:1px solid #293858;border-radius:12px;padding:11px 12px;outline:none}
+.input:focus,select:focus,textarea:focus{border-color:var(--violet)} textarea{resize:vertical;min-height:74px}
+.formGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.field label{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;font-weight:900;margin:0 0 5px 3px;letter-spacing:.6px}
+.list{display:grid;gap:9px}.listItem{padding:12px;border-radius:15px;border:1px solid var(--line);background:rgba(7,11,22,.35)}
+.topicTop{display:flex;justify-content:space-between;gap:8px;align-items:start}.topicName{font-weight:900;font-size:14px}.topicSub{color:var(--muted);font-size:11px;margin-top:2px}
+.score{font-size:18px;font-weight:900;color:#ddd6fe}.pill{font-size:9px;padding:4px 7px;border-radius:999px;font-weight:900;white-space:nowrap}
+.p0{background:rgba(239,68,68,.14);color:#fecaca}.p1{background:rgba(245,158,11,.13);color:#fde68a}.p2{background:rgba(34,211,238,.12);color:#a5f3fc}
+.bottomNav{position:fixed;z-index:30;bottom:0;left:50%;transform:translateX(-50%);width:min(760px,100%);display:grid;grid-template-columns:repeat(5,1fr);
+padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:rgba(7,11,22,.96);border-top:1px solid #1d2943;backdrop-filter:blur(14px)}
+.navBtn{background:none;border:0;color:#71809e;font-size:10px;font-weight:800;padding:5px 2px}.navBtn span{display:block;font-size:20px;margin-bottom:2px}
+.navBtn.active{color:white}.toast{position:fixed;z-index:80;left:50%;bottom:88px;transform:translate(-50%,20px);opacity:0;background:#f8fafc;color:#0f172a;
+padding:10px 14px;border-radius:13px;font-weight:900;font-size:12px;box-shadow:0 12px 32px rgba(0,0,0,.35);transition:.25s;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
+.modalWrap{position:fixed;z-index:70;inset:0;background:rgba(2,6,23,.78);display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(5px)}
+.modalWrap.open{display:flex}.modal{width:min(760px,100%);max-height:90vh;overflow:auto;background:#0f172a;border:1px solid #293858;border-radius:28px 28px 0 0;padding:18px 15px calc(18px + env(safe-area-inset-bottom))}
+.modalHandle{width:45px;height:4px;background:#475569;border-radius:999px;margin:0 auto 15px}
+.rankS{color:#fde68a}.rankA{color:#86efac}.rankB{color:#7dd3fc}.rankC{color:#c4b5fd}.rankD{color:#fca5a5}
+canvas{width:100%;height:180px;background:#091226;border-radius:16px;border:1px solid #1e2c4b}
+.monthBars{display:grid;gap:8px}.monthBar{display:grid;grid-template-columns:1fr 48px;gap:8px;align-items:center}.monthBar .name{font-size:11px;font-weight:800}
+.empty{text-align:center;padding:24px 10px;color:var(--muted);font-size:13px}
+.xpPop{animation:pop .55s ease}@keyframes pop{0%{transform:scale(.8)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.confetti{position:fixed;pointer-events:none;z-index:90;font-size:22px;animation:fly 1.3s ease forwards}@keyframes fly{to{transform:translate(var(--x),var(--y)) rotate(540deg);opacity:0}}
+@media(max-width:430px){.grid2{grid-template-columns:1fr 1fr}.formGrid{grid-template-columns:1fr}.big{font-size:25px}.card{padding:13px}.app{padding-left:10px;padding-right:10px}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div><h1>CLC 270+ RPG ⚖️</h1><small id="phaseText">Depth Learning • Day 1</small></div>
+      <div class="avatar" id="avatar">AM</div>
+    </div>
+  </header>
+
+  <main>
+    <section id="home" class="page active"></section>
+    <section id="planner" class="page"></section>
+    <section id="arena" class="page"></section>
+    <section id="vault" class="page"></section>
+    <section id="stats" class="page"></section>
+  </main>
+</div>
+
+<nav class="bottomNav">
+  <button class="navBtn active" data-page="home"><span>🎮</span>Today</button>
+  <button class="navBtn" data-page="planner"><span>🗺️</span>Plan</button>
+  <button class="navBtn" data-page="arena"><span>⚔️</span>Mocks</button>
+  <button class="navBtn" data-page="vault"><span>🧠</span>Errors</button>
+  <button class="navBtn" data-page="stats"><span>📊</span>Stats</button>
+</nav>
+
+<div id="toast" class="toast"></div>
+<div id="modal" class="modalWrap"><div class="modal"><div class="modalHandle"></div><div id="modalBody"></div></div></div>
+
+<script>
+const SEED = {"habits": [{"id": "gym", "name": "Gym", "icon": "🏋️", "target": 55, "type": "life"}, {"id": "ca_vocab", "name": "Current Affairs + Vocabulary/Idioms + Reading", "icon": "📰", "target": 70, "type": "academic"}, {"id": "maths", "name": "Maths", "icon": "➗", "target": 70, "type": "academic"}, {"id": "english", "name": "English", "icon": "🔤", "target": 70, "type": "academic"}, {"id": "reasoning", "name": "Reasoning", "icon": "🧩", "target": 65, "type": "academic"}, {"id": "revision", "name": "Revision", "icon": "🔁", "target": 85, "type": "academic"}, {"id": "gk", "name": "GK Awareness", "icon": "🌍", "target": 70, "type": "academic"}, {"id": "computer", "name": "Computer Basics", "icon": "💻", "target": 70, "type": "academic"}, {"id": "diet", "name": "Stick to diet", "icon": "🥗", "target": 90, "type": "life"}, {"id": "static", "name": "Static", "icon": "📌", "target": 90, "type": "life"}], "history": {"2026-08-01": ["reasoning", "revision", "diet", "static"], "2026-08-02": ["revision", "gk"], "2026-08-03": ["reasoning", "revision", "gk", "diet", "static"], "2026-08-04": ["ca_vocab", "revision", "gk", "static"], "2026-08-05": ["maths", "revision", "gk", "diet"], "2026-08-06": ["gym", "maths", "english", "reasoning", "revision", "gk", "computer", "diet", "static"], "2026-08-07": ["maths", "english", "revision", "gk", "diet", "static"], "2026-08-08": ["gym", "maths", "english", "reasoning", "revision", "diet", "static"]}, "revisionSchedule": {"2026-08-09": {"subject": "Reasoning", "focus": "Syllogism & Statements"}, "2026-08-10": {"subject": "Maths", "focus": "Profit, Loss & Discount"}, "2026-08-11": {"subject": "Current Affairs", "focus": "Appointments & Defence"}, "2026-08-12": {"subject": "Polity", "focus": "Constitution & Amendments"}, "2026-08-13": {"subject": "Computer", "focus": "History, Hardware & Software"}, "2026-08-14": {"subject": "Geography", "focus": "Physical & Indian Geography"}, "2026-08-15": {"subject": "English", "focus": "Vocabulary — Synonyms, Roots & Confusables"}, "2026-08-16": {"subject": "Maths", "focus": "SI, CI & Instalments"}, "2026-08-17": {"subject": "Ancient History", "focus": "IVC & Vedic Period"}, "2026-08-18": {"subject": "Reasoning", "focus": "Coding-Decoding & Series"}, "2026-08-19": {"subject": "Economy", "focus": "National Income, Inflation & Banking"}, "2026-08-20": {"subject": "Current Affairs", "focus": "Sports, Awards & Honours"}, "2026-08-21": {"subject": "Computer", "focus": "Internet, MS Office & Networking"}, "2026-08-22": {"subject": "English", "focus": "RC, Cloze & Para Questions"}, "2026-08-23": {"subject": "Maths", "focus": "Ratio, Proportion & Mixture"}, "2026-08-24": {"subject": "Polity", "focus": "Articles, Bodies & Judiciary"}, "2026-08-25": {"subject": "Reasoning", "focus": "Blood Relation, Direction & Ranking"}, "2026-08-26": {"subject": "Geography", "focus": "Rivers, Soils & National Parks"}, "2026-08-27": {"subject": "Current Affairs", "focus": "Schemes, Reports & Indices"}, "2026-08-28": {"subject": "Modern History", "focus": "Congress & Movements"}, "2026-08-29": {"subject": "Economy", "focus": "Banking, Inflation & Budget Basics"}, "2026-08-30": {"subject": "Maths", "focus": "TSD, Boats & Trains"}, "2026-08-31": {"subject": "Mixed", "focus": "August Weak Areas — 75Q Boss Test"}}, "topics": [{"id": "s1", "subject": "Maths", "group": "Clocks", "detail": "Angle Based Questions", "name": "Clocks - Angle Based Questions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s2", "subject": "Maths", "group": "Clocks", "detail": "Gain and Loss of Time", "name": "Clocks - Gain and Loss of Time", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s3", "subject": "Maths", "group": "Calendar", "detail": "Odd Days Concept", "name": "Calendar - Odd Days Concept", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s4", "subject": "Maths", "group": "Calendar", "detail": "Day of Week Questions", "name": "Calendar - Day of Week Questions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s5", "subject": "Maths", "group": "Average", "detail": "Basic Average", "name": "Average - Basic Average", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s6", "subject": "Maths", "group": "Average", "detail": "Weighted Average", "name": "Average - Weighted Average", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s7", "subject": "Maths", "group": "Simplification", "detail": "BODMAS", "name": "Simplification - BODMAS", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s8", "subject": "Maths", "group": "Simplification", "detail": "Fractions and Decimals", "name": "Simplification - Fractions and Decimals", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s9", "subject": "Maths", "group": "Simplification", "detail": "Surds and Indices", "name": "Simplification - Surds and Indices", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s10", "subject": "Maths", "group": "Problems on Ages", "detail": "Present Age Questions", "name": "Problems on Ages - Present Age Questions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s11", "subject": "Maths", "group": "Problems on Ages", "detail": "Ratio Based Age Questions", "name": "Problems on Ages - Ratio Based Age Questions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s12", "subject": "Maths", "group": "Problems on Numbers", "detail": "Number Formation", "name": "Problems on Numbers - Number Formation", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s13", "subject": "Maths", "group": "Problems on Numbers", "detail": "Digit Based Questions", "name": "Problems on Numbers - Digit Based Questions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s14", "subject": "Maths", "group": "Problems on Train", "detail": "Relative Speed", "name": "Problems on Train - Relative Speed", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s15", "subject": "Maths", "group": "Problems on Train", "detail": "Platform and Pole Questions", "name": "Problems on Train - Platform and Pole Questions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s16", "subject": "Maths", "group": "LCM and HCF", "detail": "Basic Concepts", "name": "LCM and HCF - Basic Concepts", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s17", "subject": "Maths", "group": "LCM and HCF", "detail": "Word Problems", "name": "LCM and HCF - Word Problems", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s18", "subject": "Maths", "group": "Percentage", "detail": "Basic Percentage", "name": "Percentage - Basic Percentage", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s19", "subject": "Maths", "group": "Percentage", "detail": "Percentage Change", "name": "Percentage - Percentage Change", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s20", "subject": "Maths", "group": "Percentage", "detail": "Successive Percentage", "name": "Percentage - Successive Percentage", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s21", "subject": "Maths", "group": "Profit and Loss", "detail": "Basic Concepts", "name": "Profit and Loss - Basic Concepts", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s22", "subject": "Maths", "group": "Profit and Loss", "detail": "Discount Marked Price", "name": "Profit and Loss - Discount Marked Price", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s23", "subject": "Maths", "group": "Profit and Loss", "detail": "False Weight", "name": "Profit and Loss - False Weight", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s24", "subject": "Maths", "group": "Partnerships", "detail": "Basic Partnership", "name": "Partnerships - Basic Partnership", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s25", "subject": "Maths", "group": "Partnerships", "detail": "Time Weighted Partnership", "name": "Partnerships - Time Weighted Partnership", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s26", "subject": "Maths", "group": "Compound Interest", "detail": "Annual Compounding", "name": "Compound Interest - Annual Compounding", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s27", "subject": "Maths", "group": "Compound Interest", "detail": "Half Yearly and Quarterly", "name": "Compound Interest - Half Yearly and Quarterly", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s28", "subject": "Maths", "group": "Compound Interest", "detail": "Difference Between CI and SI", "name": "Compound Interest - Difference Between CI and SI", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s29", "subject": "Maths", "group": "Ratio and Proportion", "detail": "Basic Ratio", "name": "Ratio and Proportion - Basic Ratio", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s30", "subject": "Maths", "group": "Ratio and Proportion", "detail": "Proportion and Variation", "name": "Ratio and Proportion - Proportion and Variation", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s31", "subject": "Maths", "group": "Simple Interest", "detail": "Direct Formula Questions", "name": "Simple Interest - Direct Formula Questions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s32", "subject": "Maths", "group": "Simple Interest", "detail": "Time Rate Principal Based", "name": "Simple Interest - Time Rate Principal Based", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s33", "subject": "Maths", "group": "Time and Work", "detail": "Basic Efficiency", "name": "Time and Work - Basic Efficiency", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s34", "subject": "Maths", "group": "Time and Work", "detail": "Work Equivalence", "name": "Time and Work - Work Equivalence", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s35", "subject": "Maths", "group": "Time and Work", "detail": "Alternate Days and Wages", "name": "Time and Work - Alternate Days and Wages", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s36", "subject": "Maths", "group": "Pipes and Cisterns", "detail": "Fill and Empty", "name": "Pipes and Cisterns - Fill and Empty", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s37", "subject": "Maths", "group": "Pipes and Cisterns", "detail": "Leakage Based Questions", "name": "Pipes and Cisterns - Leakage Based Questions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s38", "subject": "Maths", "group": "Time and Distance", "detail": "Basic Speed Distance Time", "name": "Time and Distance - Basic Speed Distance Time", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s39", "subject": "Maths", "group": "Time and Distance", "detail": "Boats and Streams", "name": "Time and Distance - Boats and Streams", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s40", "subject": "Maths", "group": "Time and Distance", "detail": "Relative Speed", "name": "Time and Distance - Relative Speed", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s41", "subject": "Maths", "group": "Stock and Shares", "detail": "Basic Terminology", "name": "Stock and Shares - Basic Terminology", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s42", "subject": "Maths", "group": "Stock and Shares", "detail": "Dividend and Investment", "name": "Stock and Shares - Dividend and Investment", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s43", "subject": "Maths", "group": "Discount and Bankers Discount", "detail": "Basic Discount", "name": "Discount and Bankers Discount - Basic Discount", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s44", "subject": "Maths", "group": "Discount and Bankers Discount", "detail": "True Discount and Bankers Discount", "name": "Discount and Bankers Discount - True Discount and Bankers Discount", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s45", "subject": "Maths", "group": "Geometry and Mensuration", "detail": "Lines Angles Triangles", "name": "Geometry and Mensuration - Lines Angles Triangles", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s46", "subject": "Maths", "group": "Geometry and Mensuration", "detail": "Quadrilaterals Circles", "name": "Geometry and Mensuration - Quadrilaterals Circles", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s47", "subject": "Maths", "group": "Geometry and Mensuration", "detail": "2D Figures Formulae", "name": "Geometry and Mensuration - 2D Figures Formulae", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s48", "subject": "Maths", "group": "Sets and Union", "detail": "Basic Set Operations", "name": "Sets and Union - Basic Set Operations", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s49", "subject": "Maths", "group": "Sets and Union", "detail": "Venn Diagram Questions", "name": "Sets and Union - Venn Diagram Questions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s50", "subject": "Maths", "group": "Permutation and Combination", "detail": "Fundamental Principle", "name": "Permutation and Combination - Fundamental Principle", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s51", "subject": "Maths", "group": "Permutation and Combination", "detail": "Arrangement Problems", "name": "Permutation and Combination - Arrangement Problems", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s52", "subject": "Maths", "group": "Mixture and Allegation", "detail": "Basic Allegation", "name": "Mixture and Allegation - Basic Allegation", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s53", "subject": "Maths", "group": "Mixture and Allegation", "detail": "Replacement Questions", "name": "Mixture and Allegation - Replacement Questions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s54", "subject": "Maths", "group": "Area", "detail": "Square Rectangle Triangle Circle", "name": "Area - Square Rectangle Triangle Circle", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s55", "subject": "Maths", "group": "Volume and Surface Area", "detail": "Cube Cuboid Cylinder Cone Sphere", "name": "Volume and Surface Area - Cube Cuboid Cylinder Cone Sphere", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s56", "subject": "English", "group": "English Grammar", "detail": "Parts of Speech", "name": "English Grammar - Parts of Speech", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s57", "subject": "English", "group": "English Grammar", "detail": "Tenses", "name": "English Grammar - Tenses", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s58", "subject": "English", "group": "English Grammar", "detail": "Subject Verb Agreement", "name": "English Grammar - Subject Verb Agreement", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s59", "subject": "English", "group": "English Grammar", "detail": "Articles and Determiners", "name": "English Grammar - Articles and Determiners", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s60", "subject": "English", "group": "English Grammar", "detail": "Prepositions", "name": "English Grammar - Prepositions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s61", "subject": "English", "group": "English Grammar", "detail": "Conjunctions", "name": "English Grammar - Conjunctions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s62", "subject": "English", "group": "English Grammar", "detail": "Pronouns", "name": "English Grammar - Pronouns", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s63", "subject": "English", "group": "English Grammar", "detail": "Active and Passive Voice", "name": "English Grammar - Active and Passive Voice", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s64", "subject": "English", "group": "English Grammar", "detail": "Direct and Indirect Speech", "name": "English Grammar - Direct and Indirect Speech", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s65", "subject": "English", "group": "English Grammar", "detail": "Modals", "name": "English Grammar - Modals", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s66", "subject": "English", "group": "English Grammar", "detail": "Conditional Sentences", "name": "English Grammar - Conditional Sentences", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s67", "subject": "English", "group": "English Grammar", "detail": "Parallelism", "name": "English Grammar - Parallelism", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s68", "subject": "English", "group": "English Grammar", "detail": "Comparison of Adjectives", "name": "English Grammar - Comparison of Adjectives", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s69", "subject": "English", "group": "English Grammar", "detail": "Question Tags", "name": "English Grammar - Question Tags", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s70", "subject": "English", "group": "English Usage Errors", "detail": "Error Spotting", "name": "English Usage Errors - Error Spotting", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s71", "subject": "English", "group": "English Usage Errors", "detail": "Common Confusing Words", "name": "English Usage Errors - Common Confusing Words", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s72", "subject": "English", "group": "English Usage Errors", "detail": "Redundancy and Word Misuse", "name": "English Usage Errors - Redundancy and Word Misuse", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s73", "subject": "English", "group": "Jumbled Para", "detail": "Basic Para Arrangement", "name": "Jumbled Para - Basic Para Arrangement", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s74", "subject": "English", "group": "Jumbled Para", "detail": "Opening and Closing Sentence Logic", "name": "Jumbled Para - Opening and Closing Sentence Logic", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s75", "subject": "English", "group": "Jumbled Para", "detail": "Connector Based Arrangement", "name": "Jumbled Para - Connector Based Arrangement", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s76", "subject": "English", "group": "Sentence Correction", "detail": "Grammar Based", "name": "Sentence Correction - Grammar Based", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s77", "subject": "English", "group": "Sentence Correction", "detail": "Meaning Based", "name": "Sentence Correction - Meaning Based", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s78", "subject": "English", "group": "Sentence Improvement", "detail": "Tone and Usage", "name": "Sentence Improvement - Tone and Usage", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s79", "subject": "English", "group": "Sentence Improvement", "detail": "Concise Expression", "name": "Sentence Improvement - Concise Expression", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s80", "subject": "English", "group": "Reading Comprehension", "detail": "Factual Passages", "name": "Reading Comprehension - Factual Passages", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s81", "subject": "English", "group": "Reading Comprehension", "detail": "Inference Based Passages", "name": "Reading Comprehension - Inference Based Passages", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s82", "subject": "English", "group": "Reading Comprehension", "detail": "Tone and Theme", "name": "Reading Comprehension - Tone and Theme", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s83", "subject": "English", "group": "Reading Comprehension", "detail": "Vocabulary in Context", "name": "Reading Comprehension - Vocabulary in Context", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s84", "subject": "English", "group": "Paragraph Completion", "detail": "Sentence Insertion", "name": "Paragraph Completion - Sentence Insertion", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s85", "subject": "English", "group": "Paragraph Completion", "detail": "Logical Flow", "name": "Paragraph Completion - Logical Flow", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s86", "subject": "English", "group": "One Word Substitution", "detail": "People and Professions", "name": "One Word Substitution - People and Professions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s87", "subject": "English", "group": "One Word Substitution", "detail": "Actions and Qualities", "name": "One Word Substitution - Actions and Qualities", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s88", "subject": "English", "group": "One Word Substitution", "detail": "Miscellaneous High Frequency Words", "name": "One Word Substitution - Miscellaneous High Frequency Words", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s89", "subject": "English", "group": "Synonyms and Antonyms", "detail": "Basic Vocabulary", "name": "Synonyms and Antonyms - Basic Vocabulary", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s90", "subject": "English", "group": "Synonyms and Antonyms", "detail": "Contextual Vocabulary", "name": "Synonyms and Antonyms - Contextual Vocabulary", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s91", "subject": "English", "group": "Idioms and Phrases", "detail": "Common Usage", "name": "Idioms and Phrases - Common Usage", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s92", "subject": "English", "group": "Idioms and Phrases", "detail": "Meaning Based Application", "name": "Idioms and Phrases - Meaning Based Application", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s93", "subject": "Reasoning", "group": "Ranking Tests", "detail": "Basic Ranking", "name": "Ranking Tests - Basic Ranking", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s94", "subject": "Reasoning", "group": "Ranking Tests", "detail": "Direction Based Ranking", "name": "Ranking Tests - Direction Based Ranking", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s95", "subject": "Reasoning", "group": "Linear Arrangements", "detail": "Single Row", "name": "Linear Arrangements - Single Row", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s96", "subject": "Reasoning", "group": "Linear Arrangements", "detail": "Double Row", "name": "Linear Arrangements - Double Row", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s97", "subject": "Reasoning", "group": "Linear Arrangements", "detail": "North South Facing", "name": "Linear Arrangements - North South Facing", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s98", "subject": "Reasoning", "group": "Matrix Arrangements", "detail": "Grid Based Arrangement", "name": "Matrix Arrangements - Grid Based Arrangement", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s99", "subject": "Reasoning", "group": "Matrix Arrangements", "detail": "Attribute Based Arrangement", "name": "Matrix Arrangements - Attribute Based Arrangement", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s100", "subject": "Reasoning", "group": "Sequencing", "detail": "Order and Sequence", "name": "Sequencing - Order and Sequence", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s101", "subject": "Reasoning", "group": "Sequencing", "detail": "Day Month Year Sequence", "name": "Sequencing - Day Month Year Sequence", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s102", "subject": "Reasoning", "group": "Statements Arguments", "detail": "Strong and Weak Arguments", "name": "Statements Arguments - Strong and Weak Arguments", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s103", "subject": "Reasoning", "group": "Cause and Effects", "detail": "Cause Effect Relationship", "name": "Cause and Effects - Cause Effect Relationship", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s104", "subject": "Reasoning", "group": "Cause and Effects", "detail": "Assertion Type Reasoning", "name": "Cause and Effects - Assertion Type Reasoning", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s105", "subject": "Reasoning", "group": "Statements Assumptions", "detail": "Implicit Assumptions", "name": "Statements Assumptions - Implicit Assumptions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s106", "subject": "Reasoning", "group": "Statements and Conclusion", "detail": "Syllogism Style Conclusions", "name": "Statements and Conclusion - Syllogism Style Conclusions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s107", "subject": "Reasoning", "group": "Statements and Conclusion", "detail": "Logical Conclusion Based", "name": "Statements and Conclusion - Logical Conclusion Based", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s108", "subject": "Reasoning", "group": "Number Series", "detail": "Missing Number Series", "name": "Number Series - Missing Number Series", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s109", "subject": "Reasoning", "group": "Number Series", "detail": "Wrong Number Series", "name": "Number Series - Wrong Number Series", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s110", "subject": "Reasoning", "group": "Blood Relationship Tests", "detail": "Family Tree Basics", "name": "Blood Relationship Tests - Family Tree Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s111", "subject": "Reasoning", "group": "Blood Relationship Tests", "detail": "Coded Relations", "name": "Blood Relationship Tests - Coded Relations", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s112", "subject": "Reasoning", "group": "Coding and Decoding", "detail": "Letter Coding", "name": "Coding and Decoding - Letter Coding", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s113", "subject": "Reasoning", "group": "Coding and Decoding", "detail": "Number Coding", "name": "Coding and Decoding - Number Coding", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s114", "subject": "Reasoning", "group": "Coding and Decoding", "detail": "Pattern Coding", "name": "Coding and Decoding - Pattern Coding", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s115", "subject": "Reasoning", "group": "Inferences", "detail": "Passage Based Inference", "name": "Inferences - Passage Based Inference", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s116", "subject": "Reasoning", "group": "Inferences", "detail": "Statement Based Inference", "name": "Inferences - Statement Based Inference", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s117", "subject": "Reasoning", "group": "Non Verbal Reasoning", "detail": "Mirror Image", "name": "Non Verbal Reasoning - Mirror Image", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s118", "subject": "Reasoning", "group": "Non Verbal Reasoning", "detail": "Water Image", "name": "Non Verbal Reasoning - Water Image", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s119", "subject": "Reasoning", "group": "Non Verbal Reasoning", "detail": "Paper Folding and Cutting", "name": "Non Verbal Reasoning - Paper Folding and Cutting", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s120", "subject": "Reasoning", "group": "Non Verbal Reasoning", "detail": "Embedded Figures", "name": "Non Verbal Reasoning - Embedded Figures", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s121", "subject": "Reasoning", "group": "Analogy Test", "detail": "Word Analogy", "name": "Analogy Test - Word Analogy", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s122", "subject": "Reasoning", "group": "Analogy Test", "detail": "Number Analogy", "name": "Analogy Test - Number Analogy", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s123", "subject": "Reasoning", "group": "Analogy Test", "detail": "Letter Analogy", "name": "Analogy Test - Letter Analogy", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s124", "subject": "Reasoning", "group": "Symbol Based Problems", "detail": "Mathematical Symbols", "name": "Symbol Based Problems - Mathematical Symbols", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s125", "subject": "Reasoning", "group": "Symbol Based Problems", "detail": "Logical Symbol Interpretation", "name": "Symbol Based Problems - Logical Symbol Interpretation", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s126", "subject": "Reasoning", "group": "Direction and Distance Test", "detail": "Basic Movement", "name": "Direction and Distance Test - Basic Movement", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s127", "subject": "Reasoning", "group": "Direction and Distance Test", "detail": "Complex Paths", "name": "Direction and Distance Test - Complex Paths", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s128", "subject": "Reasoning", "group": "Analytical Reasoning", "detail": "Data Arrangement", "name": "Analytical Reasoning - Data Arrangement", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s129", "subject": "Reasoning", "group": "Analytical Reasoning", "detail": "Condition Based Logic", "name": "Analytical Reasoning - Condition Based Logic", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s130", "subject": "Reasoning", "group": "Analytical Reasoning", "detail": "Puzzle Based Reasoning", "name": "Analytical Reasoning - Puzzle Based Reasoning", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s131", "subject": "Legal Basics", "group": "Constitution", "detail": "Meaning Nature and Purpose of Constitution", "name": "Constitution - Meaning Nature and Purpose of Constitution", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s132", "subject": "Legal Basics", "group": "Constitution", "detail": "Preamble", "name": "Constitution - Preamble", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s133", "subject": "Legal Basics", "group": "Constitution", "detail": "Salient Features of Indian Constitution", "name": "Constitution - Salient Features of Indian Constitution", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s134", "subject": "Legal Basics", "group": "Constitution", "detail": "Federal and Unitary Features", "name": "Constitution - Federal and Unitary Features", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s135", "subject": "Legal Basics", "group": "Constitution", "detail": "Citizenship", "name": "Constitution - Citizenship", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s136", "subject": "Legal Basics", "group": "Constitution", "detail": "Fundamental Rights Overview", "name": "Constitution - Fundamental Rights Overview", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s137", "subject": "Legal Basics", "group": "Constitution", "detail": "Right to Equality", "name": "Constitution - Right to Equality", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s138", "subject": "Legal Basics", "group": "Constitution", "detail": "Right to Freedom", "name": "Constitution - Right to Freedom", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s139", "subject": "Legal Basics", "group": "Constitution", "detail": "Right against Exploitation", "name": "Constitution - Right against Exploitation", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s140", "subject": "Legal Basics", "group": "Constitution", "detail": "Freedom of Religion", "name": "Constitution - Freedom of Religion", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s141", "subject": "Legal Basics", "group": "Constitution", "detail": "Cultural and Educational Rights", "name": "Constitution - Cultural and Educational Rights", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s142", "subject": "Legal Basics", "group": "Constitution", "detail": "Constitutional Remedies", "name": "Constitution - Constitutional Remedies", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s143", "subject": "Legal Basics", "group": "Constitution", "detail": "Fundamental Duties", "name": "Constitution - Fundamental Duties", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s144", "subject": "Legal Basics", "group": "Constitution", "detail": "Directive Principles of State Policy", "name": "Constitution - Directive Principles of State Policy", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s145", "subject": "Legal Basics", "group": "Constitution", "detail": "President", "name": "Constitution - President", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s146", "subject": "Legal Basics", "group": "Constitution", "detail": "Prime Minister and Council of Ministers", "name": "Constitution - Prime Minister and Council of Ministers", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s147", "subject": "Legal Basics", "group": "Constitution", "detail": "Parliament", "name": "Constitution - Parliament", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s148", "subject": "Legal Basics", "group": "Constitution", "detail": "Supreme Court", "name": "Constitution - Supreme Court", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s149", "subject": "Legal Basics", "group": "Constitution", "detail": "High Courts", "name": "Constitution - High Courts", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s150", "subject": "Legal Basics", "group": "Constitution", "detail": "Constitutional Bodies", "name": "Constitution - Constitutional Bodies", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s151", "subject": "Legal Basics", "group": "Constitution", "detail": "Emergency Provisions", "name": "Constitution - Emergency Provisions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s152", "subject": "Legal Basics", "group": "Constitution", "detail": "Amendment of Constitution", "name": "Constitution - Amendment of Constitution", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s153", "subject": "Legal Basics", "group": "Constitution", "detail": "Important Articles and Schedules", "name": "Constitution - Important Articles and Schedules", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s154", "subject": "Legal Basics", "group": "Law of Crime", "detail": "Meaning and Nature of Crime", "name": "Law of Crime - Meaning and Nature of Crime", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s155", "subject": "Legal Basics", "group": "Law of Crime", "detail": "Elements of Crime", "name": "Law of Crime - Elements of Crime", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s156", "subject": "Legal Basics", "group": "Law of Crime", "detail": "Mens Rea and Actus Reus", "name": "Law of Crime - Mens Rea and Actus Reus", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s157", "subject": "Legal Basics", "group": "Law of Crime", "detail": "Intention Motive Knowledge Negligence", "name": "Law of Crime - Intention Motive Knowledge Negligence", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s158", "subject": "Legal Basics", "group": "Law of Crime", "detail": "Stages of Crime", "name": "Law of Crime - Stages of Crime", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s159", "subject": "Legal Basics", "group": "Law of Crime", "detail": "Common Intention and Common Object", "name": "Law of Crime - Common Intention and Common Object", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s160", "subject": "Legal Basics", "group": "Law of Crime", "detail": "Abetment", "name": "Law of Crime - Abetment", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s161", "subject": "Legal Basics", "group": "Law of Crime", "detail": "Criminal Conspiracy", "name": "Law of Crime - Criminal Conspiracy", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s162", "subject": "Legal Basics", "group": "Law of Crime", "detail": "General Exceptions", "name": "Law of Crime - General Exceptions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s163", "subject": "Legal Basics", "group": "Law of Crime", "detail": "Joint Liability", "name": "Law of Crime - Joint Liability", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s164", "subject": "Legal Basics", "group": "Law of Crime", "detail": "Offences against Human Body", "name": "Law of Crime - Offences against Human Body", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s165", "subject": "Legal Basics", "group": "Law of Crime", "detail": "Offences against Property", "name": "Law of Crime - Offences against Property", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s166", "subject": "Legal Basics", "group": "Law of Crime", "detail": "Theft", "name": "Law of Crime - Theft", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s167", "subject": "Computer Basics", "group": "Fundamentals of Computer", "detail": "Definition and Characteristics", "name": "Fundamentals of Computer - Definition and Characteristics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s168", "subject": "Computer Basics", "group": "Fundamentals of Computer", "detail": "Generations of Computer", "name": "Fundamentals of Computer - Generations of Computer", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s169", "subject": "Computer Basics", "group": "Fundamentals of Computer", "detail": "Applications of Computer", "name": "Fundamentals of Computer - Applications of Computer", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s170", "subject": "Computer Basics", "group": "Computer Abbreviations", "detail": "Basic Full Forms", "name": "Computer Abbreviations - Basic Full Forms", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s171", "subject": "Computer Basics", "group": "Computer Abbreviations", "detail": "Networking Full Forms", "name": "Computer Abbreviations - Networking Full Forms", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s172", "subject": "Computer Basics", "group": "Computer Abbreviations", "detail": "Hardware Software Memory Terms", "name": "Computer Abbreviations - Hardware Software Memory Terms", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s173", "subject": "Computer Basics", "group": "Computer Shortcut Keys", "detail": "Windows Shortcuts", "name": "Computer Shortcut Keys - Windows Shortcuts", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s174", "subject": "Computer Basics", "group": "Computer Shortcut Keys", "detail": "MS Word Shortcuts", "name": "Computer Shortcut Keys - MS Word Shortcuts", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s175", "subject": "Computer Basics", "group": "Computer Shortcut Keys", "detail": "Browser Shortcuts", "name": "Computer Shortcut Keys - Browser Shortcuts", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s176", "subject": "Computer Basics", "group": "Microsoft Windows", "detail": "Features and Interface", "name": "Microsoft Windows - Features and Interface", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s177", "subject": "Computer Basics", "group": "Microsoft Windows", "detail": "File and Folder Management", "name": "Microsoft Windows - File and Folder Management", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s178", "subject": "Computer Basics", "group": "Microsoft Windows", "detail": "Control Panel and Settings", "name": "Microsoft Windows - Control Panel and Settings", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s179", "subject": "Computer Basics", "group": "Microsoft Windows", "detail": "Taskbar Desktop Recycle Bin", "name": "Microsoft Windows - Taskbar Desktop Recycle Bin", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s180", "subject": "Computer Basics", "group": "Microsoft Office", "detail": "Overview of Word Excel PowerPoint", "name": "Microsoft Office - Overview of Word Excel PowerPoint", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s181", "subject": "Computer Basics", "group": "Microsoft Office", "detail": "Uses and Components", "name": "Microsoft Office - Uses and Components", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s182", "subject": "Computer Basics", "group": "MS Word", "detail": "Home Tab Features", "name": "MS Word - Home Tab Features", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s183", "subject": "Computer Basics", "group": "MS Word", "detail": "Insert and Page Layout", "name": "MS Word - Insert and Page Layout", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s184", "subject": "Computer Basics", "group": "MS Word", "detail": "Formatting and Editing", "name": "MS Word - Formatting and Editing", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s185", "subject": "Computer Basics", "group": "MS Word", "detail": "Mail Merge", "name": "MS Word - Mail Merge", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s186", "subject": "Computer Basics", "group": "Types of Computer", "detail": "Analog Digital Hybrid", "name": "Types of Computer - Analog Digital Hybrid", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s187", "subject": "Computer Basics", "group": "Types of Computer", "detail": "Micro Mini Mainframe Supercomputer", "name": "Types of Computer - Micro Mini Mainframe Supercomputer", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s188", "subject": "Computer Basics", "group": "Storage Devices", "detail": "Primary Memory", "name": "Storage Devices - Primary Memory", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s189", "subject": "Computer Basics", "group": "Storage Devices", "detail": "Secondary Memory", "name": "Storage Devices - Secondary Memory", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s190", "subject": "Computer Basics", "group": "Storage Devices", "detail": "Optical Magnetic Flash Storage", "name": "Storage Devices - Optical Magnetic Flash Storage", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s191", "subject": "Computer Basics", "group": "Hardware and Software", "detail": "Types of Hardware", "name": "Hardware and Software - Types of Hardware", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s192", "subject": "Computer Basics", "group": "Hardware and Software", "detail": "System and Application Software", "name": "Hardware and Software - System and Application Software", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s193", "subject": "Computer Basics", "group": "Hardware and Software", "detail": "Utility Software", "name": "Hardware and Software - Utility Software", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s194", "subject": "Computer Basics", "group": "Input and Output Devices", "detail": "Input Devices", "name": "Input and Output Devices - Input Devices", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s195", "subject": "Computer Basics", "group": "Input and Output Devices", "detail": "Output Devices", "name": "Input and Output Devices - Output Devices", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s196", "subject": "Computer Basics", "group": "Input and Output Devices", "detail": "Softcopy and Hardcopy Devices", "name": "Input and Output Devices - Softcopy and Hardcopy Devices", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s197", "subject": "Computer Basics", "group": "Internet", "detail": "Basics of Internet", "name": "Internet - Basics of Internet", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s198", "subject": "Computer Basics", "group": "Internet", "detail": "WWW URL HTTP HTTPS", "name": "Internet - WWW URL HTTP HTTPS", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s199", "subject": "Computer Basics", "group": "Internet", "detail": "Search Engines and Email", "name": "Internet - Search Engines and Email", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s200", "subject": "Computer Basics", "group": "Computer Networks", "detail": "LAN MAN WAN", "name": "Computer Networks - LAN MAN WAN", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s201", "subject": "Computer Basics", "group": "Computer Networks", "detail": "Topologies", "name": "Computer Networks - Topologies", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s202", "subject": "Computer Basics", "group": "Computer Networks", "detail": "Network Devices", "name": "Computer Networks - Network Devices", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s203", "subject": "Computer Basics", "group": "Computer Networks", "detail": "IP Address Basics", "name": "Computer Networks - IP Address Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s204", "subject": "Computer Basics", "group": "Websites", "detail": "Static and Dynamic Websites", "name": "Websites - Static and Dynamic Websites", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s205", "subject": "Computer Basics", "group": "Websites", "detail": "Domain and Hosting Basics", "name": "Websites - Domain and Hosting Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s206", "subject": "Computer Basics", "group": "Web Browsers", "detail": "Types and Functions", "name": "Web Browsers - Types and Functions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s207", "subject": "Computer Basics", "group": "Web Browsers", "detail": "Browser Features and Settings", "name": "Web Browsers - Browser Features and Settings", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s208", "subject": "Computer Basics", "group": "Computer Virus", "detail": "Types of Virus", "name": "Computer Virus - Types of Virus", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s209", "subject": "Computer Basics", "group": "Computer Virus", "detail": "Antivirus and Cyber Safety", "name": "Computer Virus - Antivirus and Cyber Safety", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s210", "subject": "Computer Basics", "group": "Important Computer Related Terms", "detail": "RAM ROM Cache", "name": "Important Computer Related Terms - RAM ROM Cache", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s211", "subject": "Computer Basics", "group": "Important Computer Related Terms", "detail": "Booting Firmware OS GUI", "name": "Important Computer Related Terms - Booting Firmware OS GUI", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s212", "subject": "Computer Basics", "group": "Important Computer Related Terms", "detail": "Cloud Computing Basics", "name": "Important Computer Related Terms - Cloud Computing Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s213", "subject": "GKGS", "group": "Literature", "detail": "Important Authors", "name": "Literature - Important Authors", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s214", "subject": "GKGS", "group": "Literature", "detail": "Famous Books and Works", "name": "Literature - Famous Books and Works", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s215", "subject": "GKGS", "group": "Literature", "detail": "Literary Awards", "name": "Literature - Literary Awards", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s216", "subject": "GKGS", "group": "Literature", "detail": "Indian Literature Basics", "name": "Literature - Indian Literature Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s217", "subject": "GKGS", "group": "History", "detail": "Ancient India", "name": "History - Ancient India", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s218", "subject": "GKGS", "group": "History", "detail": "Medieval India", "name": "History - Medieval India", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s219", "subject": "GKGS", "group": "History", "detail": "Modern India", "name": "History - Modern India", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s220", "subject": "GKGS", "group": "History", "detail": "Freedom Struggle", "name": "History - Freedom Struggle", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s221", "subject": "GKGS", "group": "History", "detail": "Revolts and Movements", "name": "History - Revolts and Movements", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s222", "subject": "GKGS", "group": "History", "detail": "Important Dates and Sessions", "name": "History - Important Dates and Sessions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s223", "subject": "GKGS", "group": "Indian Constitution", "detail": "Preamble", "name": "Indian Constitution - Preamble", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s224", "subject": "GKGS", "group": "Indian Constitution", "detail": "Fundamental Rights", "name": "Indian Constitution - Fundamental Rights", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s225", "subject": "GKGS", "group": "Indian Constitution", "detail": "Fundamental Duties", "name": "Indian Constitution - Fundamental Duties", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s226", "subject": "GKGS", "group": "Indian Constitution", "detail": "Directive Principles", "name": "Indian Constitution - Directive Principles", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s227", "subject": "GKGS", "group": "Indian Constitution", "detail": "Union Executive", "name": "Indian Constitution - Union Executive", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s228", "subject": "GKGS", "group": "Indian Constitution", "detail": "Parliament", "name": "Indian Constitution - Parliament", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s229", "subject": "GKGS", "group": "Indian Constitution", "detail": "Judiciary", "name": "Indian Constitution - Judiciary", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s230", "subject": "GKGS", "group": "Indian Constitution", "detail": "President Prime Minister Council of Ministers", "name": "Indian Constitution - President Prime Minister Council of Ministers", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s231", "subject": "GKGS", "group": "Indian Constitution", "detail": "Constitutional Bodies", "name": "Indian Constitution - Constitutional Bodies", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s232", "subject": "GKGS", "group": "Indian Constitution", "detail": "Amendments and Schedules", "name": "Indian Constitution - Amendments and Schedules", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s233", "subject": "GKGS", "group": "Indian Constitution", "detail": "Centre State Relations", "name": "Indian Constitution - Centre State Relations", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s234", "subject": "GKGS", "group": "Indian Constitution", "detail": "Emergency Provisions", "name": "Indian Constitution - Emergency Provisions", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s235", "subject": "GKGS", "group": "Personalities", "detail": "National Leaders", "name": "Personalities - National Leaders", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s236", "subject": "GKGS", "group": "Personalities", "detail": "International Leaders", "name": "Personalities - International Leaders", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s237", "subject": "GKGS", "group": "Personalities", "detail": "Writers Scientists Reformers", "name": "Personalities - Writers Scientists Reformers", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s238", "subject": "GKGS", "group": "Sports", "detail": "Important Cups and Trophies", "name": "Sports - Important Cups and Trophies", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s239", "subject": "GKGS", "group": "Sports", "detail": "Sports Personalities", "name": "Sports - Sports Personalities", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s240", "subject": "GKGS", "group": "Sports", "detail": "Major Tournaments", "name": "Sports - Major Tournaments", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s241", "subject": "GKGS", "group": "Sports", "detail": "Olympics Commonwealth Asian Games", "name": "Sports - Olympics Commonwealth Asian Games", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s242", "subject": "GKGS", "group": "National and International Economy", "detail": "Basic Economic Terms", "name": "National and International Economy - Basic Economic Terms", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s243", "subject": "GKGS", "group": "National and International Economy", "detail": "Budget and Economic Survey", "name": "National and International Economy - Budget and Economic Survey", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s244", "subject": "GKGS", "group": "National and International Economy", "detail": "Banking and Inflation", "name": "National and International Economy - Banking and Inflation", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s245", "subject": "GKGS", "group": "National and International Economy", "detail": "International Organizations", "name": "National and International Economy - International Organizations", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s246", "subject": "GKGS", "group": "National and International Economy", "detail": "Global Economic Groupings", "name": "National and International Economy - Global Economic Groupings", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s247", "subject": "GKGS", "group": "Economics", "detail": "Micro Basics", "name": "Economics - Micro Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s248", "subject": "GKGS", "group": "Economics", "detail": "Macro Basics", "name": "Economics - Macro Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s249", "subject": "GKGS", "group": "Economics", "detail": "National Income", "name": "Economics - National Income", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s250", "subject": "GKGS", "group": "Economics", "detail": "Demand Supply Market Basics", "name": "Economics - Demand Supply Market Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s251", "subject": "GKGS", "group": "Science", "detail": "Physics Basics", "name": "Science - Physics Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s252", "subject": "GKGS", "group": "Science", "detail": "Chemistry Basics", "name": "Science - Chemistry Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s253", "subject": "GKGS", "group": "Science", "detail": "Biology Basics", "name": "Science - Biology Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s254", "subject": "GKGS", "group": "Science", "detail": "Everyday Science", "name": "Science - Everyday Science", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s255", "subject": "GKGS", "group": "Science", "detail": "Inventions and Discoveries", "name": "Science - Inventions and Discoveries", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s256", "subject": "GKGS", "group": "Politics", "detail": "Indian Political System", "name": "Politics - Indian Political System", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s257", "subject": "GKGS", "group": "Politics", "detail": "Major Political Developments", "name": "Politics - Major Political Developments", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s258", "subject": "GKGS", "group": "Politics", "detail": "Governance and Public Policy", "name": "Politics - Governance and Public Policy", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s259", "subject": "GKGS", "group": "Trade Awareness", "detail": "International Trade Basics", "name": "Trade Awareness - International Trade Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s260", "subject": "GKGS", "group": "Trade Awareness", "detail": "Export Import Basics", "name": "Trade Awareness - Export Import Basics", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s261", "subject": "GKGS", "group": "Trade Awareness", "detail": "WTO and Trade Bodies", "name": "Trade Awareness - WTO and Trade Bodies", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s262", "subject": "GKGS", "group": "Trade Awareness", "detail": "Business and Commerce Terms", "name": "Trade Awareness - Business and Commerce Terms", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s263", "subject": "GKGS", "group": "Geography", "detail": "Indian Geography", "name": "Geography - Indian Geography", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s264", "subject": "GKGS", "group": "Geography", "detail": "World Geography", "name": "Geography - World Geography", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s265", "subject": "GKGS", "group": "Geography", "detail": "Physical Geography", "name": "Geography - Physical Geography", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s266", "subject": "GKGS", "group": "Geography", "detail": "Maps Rivers Mountains", "name": "Geography - Maps Rivers Mountains", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s267", "subject": "GKGS", "group": "Geography", "detail": "Climate Soil Agriculture", "name": "Geography - Climate Soil Agriculture", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s268", "subject": "GKGS", "group": "Culture", "detail": "Indian Dance Forms", "name": "Culture - Indian Dance Forms", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s269", "subject": "GKGS", "group": "Culture", "detail": "Music and Instruments", "name": "Culture - Music and Instruments", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s270", "subject": "GKGS", "group": "Culture", "detail": "Fairs Festivals", "name": "Culture - Fairs Festivals", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s271", "subject": "GKGS", "group": "Culture", "detail": "Art and Architecture", "name": "Culture - Art and Architecture", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}, {"id": "s272", "subject": "GKGS", "group": "Culture", "detail": "UNESCO and Heritage Sites", "name": "Culture - UNESCO and Heritage Sites", "priority": "P1", "mastery": 0, "status": "Not Started", "weakness": 15, "lastTouched": "", "due": "", "active": true}], "syllabusMeta": {"source": "CUET Syllabus tracker.xlsx", "importRule": "Topic Name column only; dates/status/difficulty/extra columns ignored", "counts": {"Maths": 55, "English": 37, "Reasoning": 38, "Legal Basics": 36, "Computer Basics": 46, "GKGS": 60}, "total": 272}};
+const KEY = "clc270-rpg-v3";
+const OLD_KEY = "clc270-rpg-v2";
+const TODAY_OVERRIDE = ""; // leave blank in normal use
+
+const iso = d => {
+  const x = new Date(d);
+  const y=x.getFullYear(), m=String(x.getMonth()+1).padStart(2,"0"), day=String(x.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+};
+const todayISO = () => TODAY_OVERRIDE || iso(new Date());
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const daysBetween=(a,b)=>Math.round((new Date(b)-new Date(a))/86400000);
+const niceDate=s=>new Date(s+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short"});
+const monthKey=s=>s.slice(0,7);
+
+function defaultState(){
+  const daily={};
+  Object.entries(SEED.history).forEach(([date,ids])=>{
+    daily[date]={habits:Object.fromEntries(SEED.habits.map(h=>[h.id,ids.includes(h.id)])),mainQuest:null,study:[],note:""};
+  });
+  return {
+    profile:{name:"Abhishek",startDate:"2026-08-09",examDate:"2027-03-09",targetScore:270,phase:"Depth Learning"},
+    habits:SEED.habits,
+    daily,
+    revisionSchedule:SEED.revisionSchedule,
+    topics:JSON.parse(JSON.stringify(SEED.topics)),
+    mocks:[],
+    mistakes:[],
+    rewards:[
+      {name:"Chai / coffee + guilt-free break",cost:25},
+      {name:"30-min music / walk",cost:35},
+      {name:"Favourite snack / dessert",cost:50},
+      {name:"One episode / movie segment",cost:70},
+      {name:"Small stationery buy",cost:100},
+      {name:"Favourite meal outside",cost:150},
+      {name:"Half-day outing after milestone",cost:250},
+      {name:"Custom dream reward",cost:400}
+    ],
+    purchases:[],
+    revisionDone:{},
+    settings:{streakThreshold:6,mainQuestRewardXP:60,habitXP:10,focusSubject:"English",googleClientId:"",calendarId:"primary",lastCalendarSync:""}
+  };
+}
+function migrateOldState(){
+  let fresh=defaultState(), old=null;
+  try{old=JSON.parse(localStorage.getItem(OLD_KEY)||"null")}catch(e){}
+  if(!old)return fresh;
+  // Keep real user activity; replace only the old rough syllabus with the new 272-topic library.
+  ["profile","daily","mocks","mistakes","rewards","purchases","revisionDone"].forEach(k=>{if(old[k]!==undefined)fresh[k]=old[k]});
+  fresh.habits=old.habits||fresh.habits;
+  fresh.revisionSchedule=old.revisionSchedule||fresh.revisionSchedule;
+  fresh.settings={...fresh.settings,...(old.settings||{}),focusSubject:(old.settings&&old.settings.focusSubject)||"English",googleClientId:(old.settings&&old.settings.googleClientId)||"",calendarId:(old.settings&&old.settings.calendarId)||"primary",lastCalendarSync:(old.settings&&old.settings.lastCalendarSync)||""};
+  return fresh;
+}
+function normalizeSyllabusTopics(st){
+  const oldByName=new Map((st.topics||[]).map(t=>[String(t.name||"").toLowerCase(),t]));
+  st.topics=SEED.topics.map(seed=>{
+    const old=oldByName.get(seed.name.toLowerCase());
+    return old?{...seed,mastery:old.mastery||0,status:old.status||"Not Started",weakness:old.weakness??15,
+      lastTouched:old.lastTouched||"",due:old.due||"",priority:old.priority||seed.priority,active:old.active!==false}:seed;
+  });
+  st.settings={streakThreshold:6,mainQuestRewardXP:60,habitXP:10,focusSubject:"English",googleClientId:"",calendarId:"primary",lastCalendarSync:"",...(st.settings||{})};
+  return st;
+}
+let state;
+try{
+  const saved=JSON.parse(localStorage.getItem(KEY)||"null");
+  state=normalizeSyllabusTopics(saved||migrateOldState());
+}catch(e){state=defaultState()}
+let googleCalendarToken="";
+let googleCalendarTokenExpiresAt=0;
+let googleTokenClient=null;
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function day(date=todayISO()){
+  if(!state.daily[date]) state.daily[date]={habits:Object.fromEntries(state.habits.map(h=>[h.id,false])),mainQuest:null,study:[],note:""};
+  state.habits.forEach(h=>{if(state.daily[date].habits[h.id]===undefined)state.daily[date].habits[h.id]=false});
+  return state.daily[date];
+}
+function academicCount(d){return state.habits.filter(h=>h.type==="academic"&&d.habits[h.id]).length}
+function completedHabits(d){return state.habits.filter(h=>d.habits[h.id]).length}
+function studyMins(d){return (d.study||[]).reduce((a,b)=>a+(+b.minutes||0),0)}
+function xpForDay(d){
+  let xp=completedHabits(d)*state.settings.habitXP;
+  xp += Math.floor(studyMins(d)/25)*5;
+  if(d.mainQuest?.done) xp += state.settings.mainQuestRewardXP;
+  return xp;
+}
+function coinsForDay(d){return completedHabits(d)*2+(d.mainQuest?.done?10:0)+Math.floor(studyMins(d)/50)}
+function mockXP(){return state.mocks.reduce((s,m)=>s+75+Math.floor((+m.score||0)/10)+(m.pb?30:0),0)}
+function errorXP(){return state.mistakes.filter(x=>x.repaired).length*10}
+function totalXP(){return Object.values(state.daily).reduce((s,d)=>s+xpForDay(d),0)+mockXP()+errorXP()}
+function totalCoins(){return Object.values(state.daily).reduce((s,d)=>s+coinsForDay(d),0)+state.mocks.length*8-state.purchases.reduce((s,p)=>s+p.cost,0)}
+function level(){
+  const xp=totalXP(), lvls=[[16000,10,"270 Club"],[12500,9,"CLC Finalist"],[9500,8,"CLC Raider"],[7000,7,"CLC Hunter"],[5000,6,"Contender"],[3500,5,"Strategist"],[2200,4,"Challenger"],[1200,3,"Grinder"],[500,2,"Cadet"],[0,1,"Rookie"]];
+  return lvls.find(x=>xp>=x[0]);
+}
+function qualifiesStreak(d){return completedHabits(d)>=state.settings.streakThreshold || !!d.mainQuest?.done}
+function streak(){
+  let date=new Date(todayISO()+"T00:00:00"), n=0;
+  for(let i=0;i<500;i++){
+    const k=iso(date), d=state.daily[k];
+    if(d&&qualifiesStreak(d)){n++; date.setDate(date.getDate()-1)} else if(i===0){date.setDate(date.getDate()-1)} else break;
+  }
+  return n;
+}
+function dailyRank(d){
+  const pct=completedHabits(d)/state.habits.length;
+  const mq=d.mainQuest?.done?0.18:0;
+  const score=pct+mq;
+  return score>=1.05?"S":score>=.85?"A":score>=.65?"B":score>=.45?"C":score>0?"D":"—";
+}
+function priorityPoints(p){return p==="P0"?42:p==="P1"?30:p==="P2"?18:10}
+function subjectBoost(subject){
+  const base={"Maths":16,"English":15,"Reasoning":16,"Legal Basics":8,"Computer Basics":6,"GKGS":10};
+  let b=base[subject]||5;
+  if(state.settings.focusSubject===subject)b+=28;
+  return b;
+}
+function mistakeBoost(t){
+  const q=(t.name+" "+t.group+" "+t.detail).toLowerCase();
+  let hits=0;
+  state.mistakes.filter(m=>!m.repaired).forEach(m=>{
+    const hay=((m.subject||"")+" "+(m.topic||"")).toLowerCase();
+    if(hay && (q.includes(hay)||hay.includes((t.detail||t.name).toLowerCase())))hits++;
+  });
+  return Math.min(30,hits*10);
+}
+function mainQuestScore(t){
+  if(!t.active || t.status==="Exam Ready") return -999;
+  let s=priorityPoints(t.priority)+(100-(+t.mastery||0))*.42+(+t.weakness||0)*.65+subjectBoost(t.subject)+mistakeBoost(t);
+  if(t.status==="Learning") s+=22;
+  if(t.status==="Practicing") s+=14;
+  if(t.status==="Not Started") s+=7;
+  if(t.due && t.due<=todayISO()) s+=24;
+  if(t.lastTouched){
+    const gap=daysBetween(t.lastTouched,todayISO());
+    s+=clamp(gap,0,16);
+  } else s+=5;
+  return s;
+}
+function questObjective(t){
+  const m=+t.mastery||0, short=t.detail||t.name;
+  if(t.status==="Not Started"||t.status==="Learning"||m<30) return `${short}: learn concept properly → closed-book recall → 30 MCQs → repair every wrong/guess`;
+  if(m<60) return `${short}: 45 timed MCQs → target ≥80% → tag weak patterns → reattempt wrong set`;
+  if(m<80) return `${short}: 50 mixed/trap MCQs → target ≥85% → compress mistakes into 5 rules`;
+  return `${short}: boss maintenance → 40 mixed MCQs → target ≥90% with zero repeated mistakes`;
+}
+function suggestMainQuest(){
+  return [...state.topics].sort((a,b)=>mainQuestScore(b)-mainQuestScore(a))[0];
+}
+function setSuggestedQuest(){
+  const t=suggestMainQuest(); if(!t)return;
+  day().mainQuest={topicId:t.id,subject:t.subject,title:t.name,objective:questObjective(t),done:false,created:Date.now()};
+  save(); render(); toast("👑 Main Quest locked");
+}
+function toggleHabit(id){
+  const d=day(), was=d.habits[id]; d.habits[id]=!was; save();
+  if(!was){toast(`+${state.settings.habitXP} XP • Quest cleared`); popXP()}
+  render();
+}
+function toggleMainQuest(){
+  const d=day(); if(!d.mainQuest)return;
+  d.mainQuest.done=!d.mainQuest.done;
+  if(d.mainQuest.done){
+    const t=state.topics.find(x=>x.id===d.mainQuest.topicId);
+    if(t){t.lastTouched=todayISO(); t.mastery=clamp((+t.mastery||0)+8,0,100); if(t.mastery>=80)t.status="Revising"; else if(t.mastery>=35)t.status="Practicing";}
+    toast(`👑 +${state.settings.mainQuestRewardXP} XP • MAIN QUEST CLEAR!`); confetti();
+  }
+  save();render();
+}
+function toggleRevision(){
+  state.revisionDone[todayISO()]=!state.revisionDone[todayISO()];
+  day().habits.revision=state.revisionDone[todayISO()];
+  save(); if(state.revisionDone[todayISO()]){toast("🔁 Revision quest cleared");popXP()} render();
+}
+function addStudyBlock(subject,task,minutes,questions,correct){
+  const d=day(); d.study.push({id:Date.now(),subject,task,minutes:+minutes||0,questions:+questions||0,correct:+correct||0});
+  save();toast("📚 Study block logged");render();
+}
+function monthlyHabitPct(hid, ym=monthKey(todayISO())){
+  const dates=Object.keys(state.daily).filter(x=>x.startsWith(ym));
+  if(!dates.length)return 0;
+  const monthStart=new Date(ym+"-01T00:00:00"), next=new Date(monthStart); next.setMonth(next.getMonth()+1);
+  const daysInMonth=Math.round((next-monthStart)/86400000);
+  const completed=dates.reduce((n,k)=>n+(state.daily[k]?.habits?.[hid]?1:0),0);
+  return completed/daysInMonth*100;
+}
+function subjectMastery(){
+  const groups={}; state.topics.forEach(t=>{(groups[t.subject]??=[]).push(+t.mastery||0)});
+  return Object.entries(groups).map(([subject,a])=>({subject,value:a.reduce((x,y)=>x+y,0)/a.length})).sort((a,b)=>b.value-a.value);
+}
+function bestMock(){return Math.max(0,...state.mocks.map(m=>+m.score||0))}
+function daysLeft(){return Math.max(0,daysBetween(todayISO(),state.profile.examDate))}
+function bossPower(){
+  const mastery=state.topics.reduce((s,t)=>s+(+t.mastery||0),0)/(state.topics.length||1);
+  const rev=monthlyHabitPct("revision");
+  return clamp(mastery*.4+rev*.2+(bestMock()/state.profile.targetScore*100)*.4,0,100);
+}
+function phase(){
+  const d=todayISO();
+  if(d<="2026-10-31")return "Depth Learning";
+  if(d<="2026-12-31")return "Mock Test";
+  if(d<="2027-02-28")return "Revision";
+  return "Doom's Day ⚔️";
+}
+
+function calendarMonthDefault(){return todayISO().slice(0,7)}
+function calendarSyncReady(){
+  return !!(state.settings.googleClientId && window.google && google.accounts && google.accounts.oauth2);
+}
+function initGoogleTokenClient(){
+  if(!state.settings.googleClientId){toast("Add Google OAuth Client ID first");return false}
+  if(!(window.google&&google.accounts&&google.accounts.oauth2)){toast("Google Identity library still loading");return false}
+  googleTokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:state.settings.googleClientId.trim(),
+    scope:"https://www.googleapis.com/auth/calendar.events.readonly",
+    callback:(response)=>{
+      if(response.error){toast("Google authorization failed");return}
+      googleCalendarToken=response.access_token||"";
+      googleCalendarTokenExpiresAt=Date.now()+((+response.expires_in||3600)*1000)-60000;
+      toast("Google Calendar connected ✓");
+      const month=document.getElementById("calendarMonth")?.value||calendarMonthDefault();
+      syncGoogleCalendarMonth(month);
+    }
+  });
+  return true;
+}
+function connectGoogleCalendar(){
+  if(!initGoogleTokenClient())return;
+  googleTokenClient.requestAccessToken({prompt:"consent"});
+}
+function ensureCalendarTokenAndSync(){
+  const month=document.getElementById("calendarMonth")?.value||calendarMonthDefault();
+  if(googleCalendarToken && Date.now()<googleCalendarTokenExpiresAt){syncGoogleCalendarMonth(month);return}
+  if(!initGoogleTokenClient())return;
+  googleTokenClient.requestAccessToken({prompt:""});
+}
+function monthBounds(ym){
+  const [y,m]=ym.split("-").map(Number);
+  const start=new Date(y,m-1,1,0,0,0);
+  const end=new Date(y,m,1,0,0,0);
+  return {start:start.toISOString(),end:end.toISOString()};
+}
+function eventDateKey(ev){
+  if(ev.start?.date)return ev.start.date;
+  if(ev.start?.dateTime)return ev.start.dateTime.slice(0,10);
+  return "";
+}
+function cleanText(s){return String(s||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim()}
+function isRevisionCalendarEvent(ev){
+  const title=cleanText(ev.summary).toLowerCase();
+  const desc=cleanText(ev.description).toLowerCase();
+  return (
+    desc.includes("mcq recall") ||
+    desc.includes("error repair") ||
+    desc.includes("revision method") ||
+    title.includes("revision") ||
+    title.includes("mixed revision test")
+  );
+}
+function parseRevisionEvent(ev){
+  const title=cleanText(ev.summary||"Revision");
+  const desc=cleanText(ev.description||"");
+  let subject="",focus="";
+  const parts=title.split(/\s+[—–-]\s+/);
+  if(parts.length>1){subject=parts.shift().trim();focus=parts.join(" — ").trim()}
+  else {subject=title;focus=""}
+  subject=subject.replace(/\s+Revision$/i,"").replace(/^Revision\s+/i,"").trim();
+  if(/^Mixed Revision Test/i.test(title)){subject="Mixed";focus=title.replace(/^Mixed Revision Test\s*[—–-]?\s*/i,"").trim()||"Mixed revision test"}
+  const fm=desc.match(/Focus:\s*(.*?)(?:\s+Method:|\s+Revision method:|$)/i);
+  if(!focus && fm)focus=fm[1].trim();
+  if(!focus)focus="Revision block";
+  return {subject,focus,title};
+}
+async function syncGoogleCalendarMonth(ym){
+  if(!googleCalendarToken){toast("Connect Google Calendar first");return}
+  const b=monthBounds(ym);
+  const cal=encodeURIComponent(state.settings.calendarId||"primary");
+  const url=`https://www.googleapis.com/calendar/v3/calendars/${cal}/events?singleEvents=true&orderBy=startTime&maxResults=2500&timeMin=${encodeURIComponent(b.start)}&timeMax=${encodeURIComponent(b.end)}`;
+  try{
+    toast("Syncing revision calendar…");
+    const resp=await fetch(url,{headers:{Authorization:`Bearer ${googleCalendarToken}`}});
+    if(resp.status===401){googleCalendarToken="";googleCalendarTokenExpiresAt=0;toast("Google session expired — connect again");return}
+    if(!resp.ok)throw new Error("Calendar API "+resp.status);
+    const data=await resp.json();
+    const matched=(data.items||[]).filter(isRevisionCalendarEvent);
+    const imported=[];
+    matched.forEach(ev=>{
+      const date=eventDateKey(ev); if(!date)return;
+      const parsed=parseRevisionEvent(ev);
+      state.revisionSchedule[date]={subject:parsed.subject,focus:parsed.focus,googleEventId:ev.id||"",source:"google",title:parsed.title};
+      imported.push({date,...parsed});
+    });
+    state.settings.lastCalendarSync=new Date().toISOString();
+    save();
+    render();
+    showCalendarSyncResult(ym,imported);
+  }catch(err){
+    console.error(err);toast("Calendar sync failed");
+  }
+}
+function showCalendarSyncResult(ym,items){
+  const list=items.length?items.map(x=>`<div class="listItem"><div class="topicName">${niceDate(x.date)} • ${esc(x.subject)}</div><div class="topicSub">${esc(x.focus)}</div></div>`).join(""):`<div class="empty">No revision-style events detected in ${ym}.</div>`;
+  modal(`<h2>📅 Calendar Sync</h2><div class="muted small">${items.length} revision events imported for ${esc(ym)}.</div><div class="list" style="margin-top:12px">${list}</div><button class="primary" style="width:100%;margin-top:12px" onclick="closeModal()">Done</button>`);
+}
+function saveGoogleCalendarSettings(){
+  state.settings.googleClientId=(document.getElementById("googleClientId")?.value||"").trim();
+  state.settings.calendarId=(document.getElementById("calendarId")?.value||"primary").trim()||"primary";
+  save();toast("Calendar settings saved");
+}
+function calendarSyncCard(){
+  const last=state.settings.lastCalendarSync?new Date(state.settings.lastCalendarSync).toLocaleString("en-IN"):"Never";
+  return `<div class="sectionTitle">📅 Google Calendar Revision Sync</div>
+  <div class="card">
+    <div class="muted small">Future monthly revision plans created in Google Calendar can be pulled into this app. Import is READ-ONLY; it does not edit or delete calendar events.</div>
+    <div class="formGrid" style="margin-top:11px">
+      <div class="field"><label>Google OAuth Web Client ID</label><input class="input" id="googleClientId" value="${esc(state.settings.googleClientId||"")}" placeholder="xxxx.apps.googleusercontent.com"></div>
+      <div class="field"><label>Calendar ID</label><input class="input" id="calendarId" value="${esc(state.settings.calendarId||"primary")}" placeholder="primary"></div>
+      <div class="field"><label>Month to sync</label><input class="input" id="calendarMonth" type="month" value="${calendarMonthDefault()}"></div>
+      <div class="field"><label>Last sync</label><div class="input" style="font-size:12px">${esc(last)}</div></div>
+    </div>
+    <div class="row wrap" style="margin-top:10px">
+      <button class="secondary" onclick="saveGoogleCalendarSettings()">Save Client ID</button>
+      <button class="primary" onclick="connectGoogleCalendar()">Connect Google</button>
+      <button class="primary" onclick="ensureCalendarTokenAndSync()">↻ Sync Month</button>
+    </div>
+    <div class="tiny muted" style="margin-top:9px">Detection rule: events containing revision/MCQ-recall/error-repair patterns are imported as Revision Quests.</div>
+  </div>`;
+}
+
+function renderHome(){
+  const d=day(), lv=level(), rev=state.revisionSchedule[todayISO()], q=d.mainQuest, rank=dailyRank(d), done=completedHabits(d);
+  document.getElementById("home").innerHTML=`
+  <div class="card hero">
+    <div class="row between"><div><span class="badge">${phase()}</span><div class="big" style="margin-top:10px">Level ${lv[1]} • ${esc(lv[2])}</div>
+    <div class="muted small" style="margin-top:7px">${totalXP()} XP • ${totalCoins()} 🪙 • ${streak()} day streak 🔥</div></div>
+    <div style="text-align:right"><div class="tiny muted">Boss power</div><div class="big">${Math.round(bossPower())}%</div></div></div>
+    <div class="progress" style="margin-top:14px"><i style="width:${bossPower()}%"></i></div>
+    <div class="tiny muted" style="margin-top:7px">${daysLeft()} mission days left • Target ${state.profile.targetScore}/300</div>
+  </div>
+
+  <div class="sectionTitle">👑 Main Quest — syllabus progress, not revision</div>
+  <div class="card questMain">
+    ${q?`<div class="row between"><span class="badge gold">${esc(q.subject)}</span><span class="badge ${q.done?"green":""}">${q.done?"CLEARED ✓":"ACTIVE"}</span></div>
+      <h2>${esc(q.title)}</h2><div class="goal">${esc(q.objective)}</div>
+      <div class="row wrap" style="margin-top:13px"><button class="${q.done?"secondary":"primary"}" onclick="toggleMainQuest()">${q.done?"Undo":"⚔️ Clear Main Quest"}</button>
+      <button class="ghost" onclick="setSuggestedQuest()">Re-roll</button><button class="ghost" onclick="openMainQuestEdit()">Edit</button></div>`
+      :`<div class="muted small">Main Quest is the ONE deep-learning task that moves your syllabus forward today. Revision is a separate quest below.</div>
+      <button class="primary" style="margin-top:12px" onclick="setSuggestedQuest()">✨ Mentor Engine: Suggest Main Quest</button>`}
+  </div>
+
+  <div class="sectionTitle">🔁 Today's revision quest — only 1 of your 10 quests</div>
+  <div class="card revision">
+    ${rev?`<div class="row between"><span class="badge">${esc(rev.subject)}</span><span class="badge ${rev.source==="google"?"green":""}">${rev.source==="google"?"Google Calendar ✓":"Seeded"}</span></div><h3>${esc(rev.focus)}</h3>
+    <div class="muted small">MCQ recall → error repair → reattempt. This does NOT replace Maths/English/Reasoning learning.</div>
+    <button class="${state.revisionDone[todayISO()]?"secondary":"primary"}" style="margin-top:12px" onclick="toggleRevision()">${state.revisionDone[todayISO()]?"Revision Cleared ✓":"Mark Revision Done"}</button>`
+    :`<h3>No revision event seeded for today</h3><div class="muted small">Your monthly Google Calendar plan remains the source for rotation. You can add/update it in Settings.</div>`}
+  </div>
+
+  <div class="sectionTitle">🔥 10-Quest Daily Tracker • ${done}/10 • Rank <span class="rank${rank}">${rank}</span></div>
+  <div class="card habits">
+    ${state.habits.map(h=>{
+      const done=!!d.habits[h.id], pct=monthlyHabitPct(h.id);
+      return `<div class="habit ${done?"done":""}" onclick="toggleHabit('${h.id}')"><div class="habitIcon">${h.icon}</div>
+      <div><div class="habitName">${esc(h.name)}</div><div class="habitMeta">Monthly ${Math.round(pct)}% • Target ${h.target}% ${pct>=h.target?"🏆":""}</div></div>
+      <button class="check">${done?"✓":""}</button></div>`
+    }).join("")}
+  </div>
+
+  <div class="sectionTitle">📚 Quick Study Log</div>
+  <div class="card">
+    <div class="formGrid">
+      <div class="field"><label>Subject</label><select id="studySubject">${[...new Set(state.topics.map(t=>t.subject))].map(s=>`<option>${esc(s)}</option>`).join("")}</select></div>
+      <div class="field"><label>Minutes</label><input class="input" id="studyMinutes" inputmode="numeric" placeholder="50"></div>
+      <div class="field"><label>Task</label><input class="input" id="studyTask" placeholder="Lecture / MCQs / Notes"></div>
+      <div class="field"><label>Questions / Correct</label><div class="row"><input class="input" id="studyQ" inputmode="numeric" placeholder="40"><input class="input" id="studyC" inputmode="numeric" placeholder="32"></div></div>
+    </div>
+    <button class="primary" style="width:100%;margin-top:10px" onclick="quickStudy()">+ Log Study Block</button>
+    <div class="row between" style="margin-top:10px"><span class="muted small">Today: ${studyMins(d)} min • ${(d.study||[]).reduce((s,x)=>s+(+x.questions||0),0)} Q</span><span class="badge">+${xpForDay(d)} XP today</span></div>
+  </div>`;
+}
+function syllabusStats(){
+  const total=state.topics.length, ready=state.topics.filter(t=>t.status==="Exam Ready").length;
+  const active=state.topics.filter(t=>["Learning","Practicing","Revising"].includes(t.status)).length;
+  return {total,ready,active,pct:total?ready/total*100:0};
+}
+function currentPlannerFilters(){
+  return {
+    subject:document.getElementById("topicFilter")?.value||"",
+    group:document.getElementById("groupFilter")?.value||"",
+    search:(document.getElementById("topicSearch")?.value||"").trim().toLowerCase()
+  };
+}
+function groupsForSubject(subject){
+  return [...new Set(state.topics.filter(t=>!subject||t.subject===subject).map(t=>t.group))].sort();
+}
+function setFocusSubject(v){state.settings.focusSubject=v;save();toast(`🎯 Main Quest focus: ${v}`);render()}
+function updatePlannerList(){
+  const f=currentPlannerFilters(), gsel=document.getElementById("groupFilter");
+  if(gsel){
+    const prev=gsel.value;
+    gsel.innerHTML=`<option value="">All chapters</option>`+groupsForSubject(f.subject).map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join("");
+    if([...gsel.options].some(o=>o.value===prev))gsel.value=prev;
+  }
+  const list=document.getElementById("topicList");
+  if(list)list.innerHTML=renderTopicList();
+}
+function renderPlanner(){
+  const sug=suggestMainQuest(), st=syllabusStats(), subjects=[...new Set(state.topics.map(t=>t.subject))];
+  document.getElementById("planner").innerHTML=`
+    <div class="card">
+      <div class="row between wrap"><div><div class="sectionTitle" style="margin:0 0 5px">✨ Mentor Engine</div>
+      <div class="muted small">Detailed syllabus loaded: ${st.total} exact topics. Imported from Topic Name only — spreadsheet dates/status/extra columns ignored.</div></div>
+      <span class="badge gold">${st.ready}/${st.total} Exam Ready</span></div>
+      <div class="progress" style="margin-top:11px"><i style="width:${st.pct}%"></i></div>
+      <div class="formGrid" style="margin-top:12px">
+        <div class="field"><label>Active learning focus</label><select onchange="setFocusSubject(this.value)">
+          ${subjects.map(s=>`<option ${state.settings.focusSubject===s?"selected":""}>${esc(s)}</option>`).join("")}
+        </select></div>
+        <div class="field"><label>Active topics</label><div class="input" style="font-weight:900">${st.active} learning / practice / revision</div></div>
+      </div>
+      ${sug?`<div style="margin-top:13px;border-top:1px solid var(--line);padding-top:12px">
+        <div class="row between"><span class="badge">${esc(sug.subject)}</span><span class="badge">${esc(sug.group)}</span></div>
+        <h2 style="font-size:19px;margin:8px 0 4px">${esc(sug.detail||sug.name)}</h2>
+        <div class="goal small">${esc(questObjective(sug))}</div>
+        <div class="row wrap" style="margin-top:12px"><button class="primary" onclick="setSuggestedQuest()">👑 Lock for Today</button>
+        <span class="badge gold">Engine ${Math.round(mainQuestScore(sug))}</span></div></div>`:""}
+    </div>
+
+    <div class="sectionTitle">📚 Full Detailed Syllabus Library</div>
+    <div class="card">
+      <div class="formGrid">
+        <div class="field"><label>Subject</label><select id="topicFilter" onchange="updatePlannerList()">
+          <option value="">All subjects (${st.total})</option>
+          ${subjects.map(s=>`<option value="${esc(s)}">${esc(s)} (${state.topics.filter(t=>t.subject===s).length})</option>`).join("")}
+        </select></div>
+        <div class="field"><label>Chapter</label><select id="groupFilter" onchange="updatePlannerList()"><option value="">All chapters</option>
+          ${groupsForSubject("").map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join("")}</select></div>
+      </div>
+      <div class="field" style="margin-top:9px"><label>Search exact topic</label><input class="input" id="topicSearch" oninput="updatePlannerList()" placeholder="e.g. False Weight, Fundamental Rights, IP Address..."></div>
+      <div class="row wrap" style="margin-top:10px"><button class="secondary" onclick="openAddTopic()">+ Custom Topic</button>
+        <span class="badge">${state.topics.filter(t=>t.subject==="Maths").length} Maths</span>
+        <span class="badge">${state.topics.filter(t=>t.subject==="English").length} English</span>
+        <span class="badge">${state.topics.filter(t=>t.subject==="Reasoning").length} Reasoning</span></div>
+    </div>
+    <div class="list" id="topicList">${renderTopicList()}</div>`;
+}
+function renderTopicList(){
+  const f=currentPlannerFilters();
+  const filtered=[...state.topics].filter(t=>
+    (!f.subject||t.subject===f.subject) &&
+    (!f.group||t.group===f.group) &&
+    (!f.search||(t.name+" "+t.subject+" "+t.group).toLowerCase().includes(f.search))
+  ).sort((a,b)=>mainQuestScore(b)-mainQuestScore(a));
+  if(!filtered.length)return `<div class="empty">No topic matches this filter.</div>`;
+  return filtered.map(t=>`
+    <div class="listItem">
+      <div class="topicTop"><div><div class="topicName">${esc(t.detail||t.name)}</div>
+      <div class="topicSub">${esc(t.subject)} • ${esc(t.group)} • ${esc(t.status)}</div></div>
+      <span class="pill ${t.priority.toLowerCase()}">${t.priority}</span></div>
+      <div class="row between" style="margin-top:9px"><div style="flex:1"><div class="progress"><i style="width:${t.mastery}%"></i></div></div><div class="score">${t.mastery}%</div></div>
+      <div class="row wrap" style="margin-top:9px"><button class="ghost" onclick="editTopic('${t.id}')">Update</button>
+      <button class="ghost" onclick="lockTopic('${t.id}')">👑 Main Quest</button>
+      <span class="badge">Engine ${Math.round(mainQuestScore(t))}</span></div>
+    </div>`).join("");
+}
+function renderArena(){
+  const best=bestMock(), recent=[...state.mocks].slice(-5).reverse();
+  document.getElementById("arena").innerHTML=`
+  <div class="grid grid2">
+    <div class="kpi"><div class="l">Best Mock</div><div class="v">${best}/300</div></div>
+    <div class="kpi"><div class="l">Boss Fights</div><div class="v">${state.mocks.length}</div></div>
+  </div>
+  <div class="sectionTitle">⚔️ Mock Score Trend</div><div class="card"><canvas id="mockChart" width="700" height="300"></canvas></div>
+  <div class="sectionTitle">+ Log Boss Fight</div><div class="card">
+    <div class="formGrid"><div class="field"><label>Name</label><input class="input" id="mockName" placeholder="Adda Mock 04"></div>
+    <div class="field"><label>Score /300</label><input class="input" id="mockScore" inputmode="numeric"></div>
+    <div class="field"><label>Correct</label><input class="input" id="mockCorrect" inputmode="numeric"></div>
+    <div class="field"><label>Incorrect</label><input class="input" id="mockWrong" inputmode="numeric"></div>
+    </div><button class="primary" style="width:100%;margin-top:10px" onclick="addMock()">⚔️ Save Mock</button>
+  </div>
+  <div class="sectionTitle">Recent fights</div><div class="list">${recent.length?recent.map(m=>`<div class="listItem"><div class="row between"><div><div class="topicName">${esc(m.name||"Mock")}</div><div class="topicSub">${niceDate(m.date)} • ${m.correct||0} correct • ${m.wrong||0} wrong</div></div><div class="score">${m.score}</div></div></div>`).join(""):`<div class="empty">No mocks logged yet.</div>`}</div>`;
+  setTimeout(drawMockChart,0);
+}
+function renderVault(){
+  const due=state.mistakes.filter(m=>!m.repaired && (!m.revisit||m.revisit<=todayISO())).length;
+  document.getElementById("vault").innerHTML=`
+  <div class="grid grid2"><div class="kpi"><div class="l">Open Errors</div><div class="v">${state.mistakes.filter(m=>!m.repaired).length}</div></div>
+  <div class="kpi"><div class="l">Due Now</div><div class="v">${due}</div></div></div>
+  <div class="sectionTitle">🧠 Add lost mark</div><div class="card">
+    <div class="formGrid"><div class="field"><label>Subject</label><input class="input" id="errSubject" placeholder="Maths"></div>
+    <div class="field"><label>Topic</label><input class="input" id="errTopic" placeholder="SI/CI"></div>
+    <div class="field"><label>Type</label><select id="errType"><option>Knowledge Gap</option><option>Recall Gap</option><option>Confusion</option><option>Silly Mistake</option><option>Time/Pressure</option></select></div>
+    <div class="field"><label>Revisit</label><input class="input" id="errDate" type="date"></div></div>
+    <div class="field" style="margin-top:9px"><label>Correct rule / fix</label><textarea id="errFix" placeholder="What will stop this error next time?"></textarea></div>
+    <button class="primary" style="width:100%;margin-top:10px" onclick="addError()">Vault it</button>
+  </div>
+  <div class="sectionTitle">Error queue</div><div class="list">${state.mistakes.length?state.mistakes.slice().reverse().map(m=>`
+    <div class="listItem"><div class="row between"><div><div class="topicName">${esc(m.subject)} — ${esc(m.topic)}</div><div class="topicSub">${esc(m.type)} • revisit ${m.revisit?niceDate(m.revisit):"not set"}</div></div>
+    <button class="${m.repaired?"secondary":"primary"}" onclick="repairError('${m.id}')">${m.repaired?"Looted ✓":"Repair +10 XP"}</button></div><div class="small muted" style="margin-top:8px">${esc(m.fix||"")}</div></div>`).join(""):`<div class="empty">Clean vault. Add only errors worth preventing.</div>`}</div>`;
+}
+function renderStats(){
+  const d=day(), rank=dailyRank(d), mastery=subjectMastery();
+  document.getElementById("stats").innerHTML=`
+  <div class="grid grid2">
+   <div class="kpi"><div class="l">Total XP</div><div class="v">${totalXP()}</div></div>
+   <div class="kpi"><div class="l">Coins</div><div class="v">${totalCoins()} 🪙</div></div>
+   <div class="kpi"><div class="l">Current Streak</div><div class="v">${streak()} 🔥</div></div>
+   <div class="kpi"><div class="l">Today Rank</div><div class="v rank${rank}">${rank}</div></div>
+  </div>
+  <div class="sectionTitle">📆 Monthly Tracker — same 10 quests</div><div class="card monthBars">
+   ${state.habits.map(h=>{const p=monthlyHabitPct(h.id);return `<div class="monthBar"><div><div class="name">${h.icon} ${esc(h.name)}</div><div class="progress" style="margin-top:4px"><i style="width:${Math.min(100,p)}%"></i></div></div><div class="small" style="font-weight:900;text-align:right">${Math.round(p)}%<div class="tiny muted">/${h.target}</div></div></div>`}).join("")}
+  </div>
+  <div class="sectionTitle">🗺️ Subject Mastery</div><div class="card monthBars">${mastery.map(x=>`<div class="monthBar"><div><div class="name">${esc(x.subject)}</div><div class="progress" style="margin-top:4px"><i style="width:${x.value}%"></i></div></div><div class="small" style="font-weight:900;text-align:right">${Math.round(x.value)}%</div></div>`).join("")}</div>
+  <div class="sectionTitle">🪙 Reward Shop</div><div class="list">${state.rewards.map((r,i)=>`<div class="listItem"><div class="row between"><div><div class="topicName">${esc(r.name)}</div><div class="topicSub">${r.cost} coins</div></div><button class="${totalCoins()>=r.cost?"primary":"secondary"}" onclick="buyReward(${i})">Claim</button></div></div>`).join("")}</div>
+  ${calendarSyncCard()}
+  <div class="sectionTitle">📲 Install App</div><div class="card"><div class="muted small">When hosted on HTTPS, install this PWA to your phone home screen for an app-like experience.</div><button class="primary" id="installBtn" style="margin-top:10px" onclick="installPWA()">Install / Add to Home Screen</button></div>
+  <div class="sectionTitle">⚙️ Settings & Backup</div><div class="card"><div class="formGrid">
+    <div class="field"><label>Name</label><input class="input" id="setName" value="${esc(state.profile.name)}"></div>
+    <div class="field"><label>Target Score</label><input class="input" id="setTarget" inputmode="numeric" value="${state.profile.targetScore}"></div>
+    <div class="field"><label>Mission Date</label><input class="input" id="setExam" type="date" value="${state.profile.examDate}"></div>
+    <div class="field"><label>Streak threshold /10</label><input class="input" id="setStreak" inputmode="numeric" value="${state.settings.streakThreshold}"></div></div>
+    <button class="primary" style="width:100%;margin-top:10px" onclick="saveSettings()">Save Settings</button>
+    <div class="row wrap" style="margin-top:10px"><button class="secondary" onclick="exportData()">Export Backup</button><label class="secondary" style="display:inline-block">Import Backup<input type="file" accept=".json" onchange="importData(this)" hidden></label><button class="danger" onclick="resetApp()">Reset App</button></div>
+  </div>`;
+}
+function render(){
+  document.getElementById("phaseText").textContent=`${phase()} • Mission Day ${Math.max(1,daysBetween(state.profile.startDate,todayISO())+1)}`;
+  document.getElementById("avatar").textContent=(state.profile.name||"AM").split(" ").map(x=>x[0]).join("").slice(0,2).toUpperCase();
+  renderHome(); renderPlanner(); renderArena(); renderVault(); renderStats();
+}
+function quickStudy(){
+  addStudyBlock(document.getElementById("studySubject").value,document.getElementById("studyTask").value,
+  document.getElementById("studyMinutes").value,document.getElementById("studyQ").value,document.getElementById("studyC").value)
+}
+function addMock(){
+  const score=+document.getElementById("mockScore").value||0;
+  const prev=Math.max(0,...state.mocks.map(m=>+m.score||0));
+  state.mocks.push({id:String(Date.now()),date:todayISO(),name:document.getElementById("mockName").value||"Mock",score,
+    correct:+document.getElementById("mockCorrect").value||0,wrong:+document.getElementById("mockWrong").value||0,pb:score>prev});
+  save();if(score>prev){toast("🏆 PERSONAL BEST! +30 bonus XP");confetti()}else toast("⚔️ Boss fight logged");render();
+}
+function addError(){
+  state.mistakes.push({id:String(Date.now()),date:todayISO(),subject:document.getElementById("errSubject").value||"Mixed",
+    topic:document.getElementById("errTopic").value||"Unknown",type:document.getElementById("errType").value,
+    revisit:document.getElementById("errDate").value,fix:document.getElementById("errFix").value,repaired:false});
+  save();toast("🧠 Error vaulted");render();
+}
+function repairError(id){const m=state.mistakes.find(x=>x.id===id);if(m){m.repaired=!m.repaired;save();if(m.repaired){toast("+10 XP • Lost mark recovered");popXP()}render()}}
+function lockTopic(id){const t=state.topics.find(x=>x.id===id);if(!t)return;day().mainQuest={topicId:t.id,subject:t.subject,title:t.name,objective:questObjective(t),done:false};save();toast("👑 Main Quest locked");showPage("home")}
+function openMainQuestEdit(){
+ const q=day().mainQuest||{}; modal(`
+  <h2>Edit Main Quest</h2><div class="field"><label>Subject</label><input class="input" id="mqSub" value="${esc(q.subject||"")}"></div>
+  <div class="field" style="margin-top:9px"><label>Title</label><input class="input" id="mqTitle" value="${esc(q.title||"")}"></div>
+  <div class="field" style="margin-top:9px"><label>Win condition</label><textarea id="mqObj">${esc(q.objective||"")}</textarea></div>
+  <button class="primary" style="width:100%;margin-top:12px" onclick="saveMQEdit()">Save Quest</button>`);
+}
+function saveMQEdit(){day().mainQuest={...(day().mainQuest||{}),subject:document.getElementById("mqSub").value,title:document.getElementById("mqTitle").value,objective:document.getElementById("mqObj").value,done:false};save();closeModal();render()}
+function editTopic(id){
+ const t=state.topics.find(x=>x.id===id); if(!t)return;
+ modal(`<h2>${esc(t.subject)} — ${esc(t.detail||t.name)}</h2><div class="small muted" style="margin:-4px 0 12px">${esc(t.group)}</div><div class="formGrid">
+ <div class="field"><label>Mastery %</label><input class="input" id="tm" inputmode="numeric" value="${t.mastery}"></div>
+ <div class="field"><label>Weakness 0-100</label><input class="input" id="tw" inputmode="numeric" value="${t.weakness}"></div>
+ <div class="field"><label>Status</label><select id="ts">${["Not Started","Learning","Practicing","Revising","Exam Ready"].map(x=>`<option ${x===t.status?"selected":""}>${x}</option>`).join("")}</select></div>
+ <div class="field"><label>Mentor Priority</label><select id="tp">${["P0","P1","P2","P3"].map(x=>`<option ${x===t.priority?"selected":""}>${x}</option>`).join("")}</select></div>
+ <div class="field"><label>Next due</label><input class="input" id="td" type="date" value="${t.due||""}"></div>
+ <div class="field"><label>Last touched</label><input class="input" id="tl" type="date" value="${t.lastTouched||""}"></div></div>
+ <button class="primary" style="width:100%;margin-top:12px" onclick="saveTopic('${id}')">Save Progress</button>`)
+}
+function saveTopic(id){const t=state.topics.find(x=>x.id===id);t.mastery=clamp(+document.getElementById("tm").value||0,0,100);t.weakness=clamp(+document.getElementById("tw").value||0,0,100);t.status=document.getElementById("ts").value;t.priority=document.getElementById("tp").value;t.due=document.getElementById("td").value;t.lastTouched=document.getElementById("tl").value;save();closeModal();render()}
+function openAddTopic(){modal(`<h2>Add Custom Topic</h2><div class="field"><label>Subject</label><input class="input" id="naSub"></div>
+<div class="field" style="margin-top:9px"><label>Chapter / Group</label><input class="input" id="naGroup"></div>
+<div class="field" style="margin-top:9px"><label>Topic</label><input class="input" id="naName"></div>
+<button class="primary" style="width:100%;margin-top:12px" onclick="addTopic()">Add to Queue</button>`)}
+function addTopic(){const subject=document.getElementById("naSub").value||"Other",group=document.getElementById("naGroup").value||"Custom",detail=document.getElementById("naName").value||"New Topic";state.topics.push({id:"t"+Date.now(),subject,group,detail,name:`${group} - ${detail}`,priority:"P1",mastery:0,status:"Not Started",weakness:15,lastTouched:"",due:"",active:true});save();closeModal();render()}
+function buyReward(i){const r=state.rewards[i];if(totalCoins()<r.cost){toast("🪙 Not enough coins yet");return}state.purchases.push({name:r.name,cost:r.cost,date:todayISO()});save();toast("🎁 Reward unlocked — guilt-free!");confetti();render()}
+function saveSettings(){state.profile.name=document.getElementById("setName").value;state.profile.targetScore=+document.getElementById("setTarget").value||270;state.profile.examDate=document.getElementById("setExam").value;state.settings.streakThreshold=clamp(+document.getElementById("setStreak").value||6,1,10);save();toast("Settings saved");render()}
+function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:"application/json"}));a.download=`CLC_RPG_Backup_${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
+function importData(el){const f=el.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{state=JSON.parse(rd.result);save();toast("Backup restored");render()}catch(e){toast("Invalid backup file")}};rd.readAsText(f)}
+function resetApp(){if(confirm("Reset all app data? Export a backup first if needed.")){state=defaultState();save();render();toast("Fresh mission created")}}
+function modal(x){document.getElementById("modalBody").innerHTML=x;document.getElementById("modal").classList.add("open")}
+function closeModal(){document.getElementById("modal").classList.remove("open")}
+document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()})
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.__tt);window.__tt=setTimeout(()=>t.classList.remove("show"),1800)}
+function popXP(){document.querySelector(".avatar")?.classList.add("xpPop");setTimeout(()=>document.querySelector(".avatar")?.classList.remove("xpPop"),600)}
+function confetti(){for(let i=0;i<18;i++){const e=document.createElement("div");e.className="confetti";e.textContent=["✨","⚡","🏆","🪙","🔥"][i%5];e.style.left=(45+Math.random()*10)+"vw";e.style.top="48vh";e.style.setProperty("--x",(Math.random()*400-200)+"px");e.style.setProperty("--y",(-100-Math.random()*350)+"px");document.body.appendChild(e);setTimeout(()=>e.remove(),1400)}}
+function drawMockChart(){
+ const c=document.getElementById("mockChart");if(!c)return;const ctx=c.getContext("2d"), w=c.width,h=c.height;
+ ctx.clearRect(0,0,w,h);ctx.strokeStyle="#273858";ctx.lineWidth=1;
+ [0,100,200,300].forEach(v=>{const y=h-30-v/300*(h-50);ctx.beginPath();ctx.moveTo(38,y);ctx.lineTo(w-12,y);ctx.stroke();ctx.fillStyle="#64748b";ctx.font="18px sans-serif";ctx.fillText(v,2,y+6)});
+ const arr=state.mocks.slice(-12);if(!arr.length){ctx.fillStyle="#64748b";ctx.font="24px sans-serif";ctx.fillText("Log your first boss fight 👀",w/2-125,h/2);return}
+ ctx.strokeStyle="#8b5cf6";ctx.lineWidth=5;ctx.beginPath();
+ arr.forEach((m,i)=>{const x=48+i*((w-75)/Math.max(1,arr.length-1)),y=h-30-(+m.score||0)/300*(h-50);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);ctx.fillStyle="#22d3ee";ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fill()});ctx.stroke()
+}
+function showPage(id){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===id));document.querySelectorAll(".navBtn").forEach(x=>x.classList.toggle("active",x.dataset.page===id));window.scrollTo({top:0,behavior:"smooth"});if(id==="arena")setTimeout(drawMockChart,0)}
+let deferredInstallPrompt=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstallPrompt=e;});
+async function installPWA(){
+  if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;return}
+  toast("Browser menu → Add to Home screen / Install app");
+}
+document.querySelectorAll(".navBtn").forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
+day();save();render();
+</script>
+</body></html>
