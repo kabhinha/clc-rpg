@@ -9,8 +9,9 @@
   <meta name="apple-mobile-web-app-title" content="CLC RPG" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <title>CLC 270+ RPG</title>
+  <title>CLC 290+ RPG</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
 :root{
   --bg:#070b16;--panel:#0f172a;--panel2:#111c35;--line:#22304f;--text:#f8fafc;--muted:#94a3b8;
@@ -88,7 +89,7 @@ canvas{width:100%;height:180px;background:#091226;border-radius:16px;border:1px 
 <div class="app">
   <header class="topbar">
     <div class="brand">
-      <div><h1>CLC 270+ RPG ⚖️</h1><small id="phaseText">Depth Learning • Day 1</small></div>
+      <div><h1>CLC 290+ RPG ⚖️</h1><small id="phaseText">Depth Learning • Day 1</small></div>
       <div class="avatar" id="avatar">AM</div>
     </div>
   </header>
@@ -119,6 +120,14 @@ const KEY = "clc270-rpg-v4";
 const OLD_KEY = "clc270-rpg-v3";
 const TODAY_OVERRIDE = ""; // leave blank in normal use
 
+// Cloud persistence (frontend-safe values only; NO secret/service-role key here)
+const SUPABASE_URL = "https://wjdammmqwnkzaxdiageo.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_DiEwOyINUG66c6uwas3_9Q_jBjRUZPZ";
+
+const CLOUD_BIND_KEY = "clc270-rpg-cloud-user";
+const CLOUD_LAST_SYNC_KEY = "clc270-rpg-cloud-last-sync";
+const CLOUD_LOCAL_CHANGE_KEY = "clc270-rpg-local-change";
+
 const iso = d => {
   const x = new Date(d);
   const y=x.getFullYear(), m=String(x.getMonth()+1).padStart(2,"0"), day=String(x.getDate()).padStart(2,"0");
@@ -137,7 +146,7 @@ function defaultState(){
     daily[date]={habits:Object.fromEntries(SEED.habits.map(h=>[h.id,ids.includes(h.id)])),mainQuest:null,study:[],note:""};
   });
   return {
-    profile:{name:"Abhishek",startDate:"2026-08-09",examDate:"2027-03-09",targetScore:270,phase:"Depth Learning"},
+    profile:{name:"Abhishek",startDate:"2026-08-09",examDate:"2027-03-09",targetScore:290,phase:"Depth Learning"},
     habits:SEED.habits,
     daily,
     revisionSchedule:SEED.revisionSchedule,
@@ -182,6 +191,10 @@ function normalizeSyllabusTopics(st){
   return st;
 }
 
+function normalizeLegacyTarget(st){
+  if(st?.profile && (+st.profile.targetScore===270)) st.profile.targetScore=290;
+  return st;
+}
 function normalizeManualQuestState(st){
   st.activeMainQuest = st.activeMainQuest || null;
   Object.entries(st.daily||{}).forEach(([date,d])=>{
@@ -212,17 +225,363 @@ function normalizeManualQuestState(st){
 let state;
 try{
   const saved=JSON.parse(localStorage.getItem(KEY)||"null");
-  state=normalizeManualQuestState(normalizeSyllabusTopics(saved||migrateOldState()));
+  state=normalizeManualQuestState(normalizeLegacyTarget(normalizeSyllabusTopics(saved||migrateOldState())));
 }catch(e){state=defaultState()}
 let googleCalendarToken="";
 let googleCalendarTokenExpiresAt=0;
 let googleTokenClient=null;
-function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function save(markDirty=true){
+  localStorage.setItem(KEY,JSON.stringify(state));
+  if(markDirty){
+    localStorage.setItem(CLOUD_LOCAL_CHANGE_KEY,String(Date.now()));
+    scheduleCloudSync();
+  }
+}
 function day(date=todayISO()){
   if(!state.daily[date]) state.daily[date]={habits:Object.fromEntries(state.habits.map(h=>[h.id,false])),mainQuest:null,mainQuestRewardEarned:false,study:[],note:""};
   state.habits.forEach(h=>{if(state.daily[date].habits[h.id]===undefined)state.daily[date].habits[h.id]=false});
   return state.daily[date];
 }
+
+let sbClient=null;
+let cloudUser=null;
+let cloudReady=false;
+let cloudSyncTimer=null;
+let cloudSyncing=false;
+let cloudStatus="Local only";
+let cloudHandshakeUserId="";
+let pendingCloudRow=null;
+
+function cloudTimeLabel(){
+  const v=localStorage.getItem(CLOUD_LAST_SYNC_KEY);
+  if(!v)return "Never";
+  const n=+v;
+  if(!Number.isFinite(n))return "Never";
+  return new Date(n).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+}
+function cloudSetStatus(msg, rerender=false){
+  cloudStatus=msg;
+  if(rerender && document.getElementById("stats")?.classList.contains("active")) renderStats();
+}
+function cloudErrMessage(e){
+  return e?.message || e?.error_description || e?.details || String(e||"Unknown cloud error");
+}
+function cloudMarkSynced(updatedAt){
+  const ms=Date.parse(updatedAt||"") || Date.now();
+  localStorage.setItem(CLOUD_LAST_SYNC_KEY,String(ms));
+  localStorage.setItem(CLOUD_LOCAL_CHANGE_KEY,String(ms));
+  if(cloudUser?.id)localStorage.setItem(CLOUD_BIND_KEY,cloudUser.id);
+}
+function cloudIsBoundToCurrentUser(){
+  return !!cloudUser?.id && localStorage.getItem(CLOUD_BIND_KEY)===cloudUser.id;
+}
+function scheduleCloudSync(){
+  if(!cloudReady || !cloudUser || !sbClient)return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer=setTimeout(()=>pushStateToCloud(false),900);
+}
+async function pushStateToCloud(force=false){
+  if(!sbClient || !cloudUser)return false;
+  if(cloudSyncing && !force)return false;
+
+  cloudSyncing=true;
+  cloudSetStatus("Saving to cloud…",true);
+  try{
+    const payload={
+      user_id:cloudUser.id,
+      state:state,
+      schema_version:4
+    };
+    const {data,error}=await sbClient
+      .from("app_state")
+      .upsert(payload,{onConflict:"user_id"})
+      .select("updated_at")
+      .single();
+
+    if(error)throw error;
+    cloudMarkSynced(data?.updated_at);
+    cloudReady=true;
+    cloudSetStatus("Cloud saved ✓",true);
+    return true;
+  }catch(e){
+    cloudSetStatus("Cloud pending — local data is safe",true);
+    console.error("Cloud push failed:",e);
+    if(force)toast("☁️ "+cloudErrMessage(e));
+    return false;
+  }finally{
+    cloudSyncing=false;
+  }
+}
+function normalizeIncomingCloudState(raw){
+  const incoming=raw && typeof raw==="object" ? raw : defaultState();
+  return normalizeManualQuestState(normalizeLegacyTarget(normalizeSyllabusTopics(incoming)));
+}
+function applyCloudRow(row){
+  if(!row?.state)return;
+  state=normalizeIncomingCloudState(row.state);
+  // IMPORTANT: write downloaded state locally WITHOUT marking it as a new edit.
+  save(false);
+  cloudMarkSynced(row.updated_at);
+  if(cloudUser?.id)localStorage.setItem(CLOUD_BIND_KEY,cloudUser.id);
+  cloudReady=true;
+  pendingCloudRow=null;
+  closeModal();
+  cloudSetStatus("Cloud loaded ✓");
+  render();
+  toast("☁️ Cloud progress loaded");
+}
+async function acceptCloudState(){
+  if(!pendingCloudRow)return;
+  applyCloudRow(pendingCloudRow);
+}
+async function replaceCloudWithLocal(){
+  closeModal();
+  pendingCloudRow=null;
+  cloudReady=true;
+  localStorage.setItem(CLOUD_BIND_KEY,cloudUser.id);
+  const ok=await pushStateToCloud(true);
+  if(ok){render();toast("☁️ This device uploaded to cloud");}
+}
+function showCloudChoice(row, conflict=false){
+  pendingCloudRow=row;
+  const cloudDate=new Date(Date.parse(row.updated_at)||Date.now()).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+  modal(`
+    <h2>${conflict?"☁️ Sync conflict":"☁️ Cloud data found"}</h2>
+    <div class="muted small" style="line-height:1.55">
+      ${conflict
+        ?"This device and the cloud both changed since the last sync. I will not overwrite either one automatically."
+        :"This browser has not been linked to this cloud account before. Choose which copy should become active."}
+    </div>
+    <div class="card" style="margin-top:12px;padding:12px">
+      <div class="tiny muted">CLOUD COPY</div>
+      <div style="font-weight:900;margin-top:4px">Last cloud update: ${esc(cloudDate)}</div>
+    </div>
+    <button class="primary" style="width:100%;margin-top:12px" onclick="acceptCloudState()">☁️ Load Cloud Data</button>
+    <button class="secondary" style="width:100%;margin-top:9px" onclick="replaceCloudWithLocal()">📱 Use This Device & Replace Cloud</button>
+    <div class="tiny muted" style="margin-top:10px">Nothing is deleted until you explicitly choose a side.</div>
+  `);
+}
+async function fetchCloudRow(){
+  const {data,error}=await sbClient
+    .from("app_state")
+    .select("state,updated_at,schema_version")
+    .eq("user_id",cloudUser.id)
+    .maybeSingle();
+  if(error)throw error;
+  return data||null;
+}
+async function beginCloudHandshake(force=false){
+  if(!sbClient || !cloudUser)return;
+  if(cloudHandshakeUserId===cloudUser.id && cloudReady && !force)return;
+  cloudHandshakeUserId=cloudUser.id;
+  cloudSetStatus("Checking cloud…",true);
+
+  try{
+    const row=await fetchCloudRow();
+
+    // FIRST EVER CLOUD SETUP:
+    // Empty DB row means current local progress wins automatically.
+    if(!row){
+      cloudReady=true;
+      localStorage.setItem(CLOUD_BIND_KEY,cloudUser.id);
+      const ok=await pushStateToCloud(true);
+      if(ok){
+        cloudSetStatus("First cloud backup created ✓",true);
+        toast("☁️ Existing progress backed up");
+      }
+      return;
+    }
+
+    // NEW PHONE / NEW BROWSER:
+    // Never silently overwrite local or cloud data.
+    if(!cloudIsBoundToCurrentUser()){
+      cloudReady=false;
+      cloudSetStatus("Choose local or cloud copy",true);
+      showCloudChoice(row,false);
+      return;
+    }
+
+    // SAME DEVICE: resolve safely using last-sync timestamps.
+    const lastSync=+(localStorage.getItem(CLOUD_LAST_SYNC_KEY)||0);
+    const localChanged=+(localStorage.getItem(CLOUD_LOCAL_CHANGE_KEY)||0);
+    const cloudChanged=Date.parse(row.updated_at)||0;
+    const epsilon=1500;
+    const localDirty=localChanged>lastSync+epsilon;
+    const cloudDirty=cloudChanged>lastSync+epsilon;
+
+    if(localDirty && cloudDirty){
+      cloudReady=false;
+      cloudSetStatus("Sync conflict — choose copy",true);
+      showCloudChoice(row,true);
+    }else if(cloudDirty){
+      applyCloudRow(row);
+    }else if(localDirty){
+      cloudReady=true;
+      await pushStateToCloud(true);
+    }else{
+      cloudReady=true;
+      cloudMarkSynced(row.updated_at);
+      cloudSetStatus("Cloud synced ✓",true);
+    }
+  }catch(e){
+    cloudReady=false;
+    cloudSetStatus("Cloud unavailable — local data is safe",true);
+    console.error("Cloud handshake failed:",e);
+    toast("☁️ "+cloudErrMessage(e));
+  }
+}
+async function cloudSignUp(){
+  if(!sbClient){toast("Cloud library is still loading");return}
+  const email=(document.getElementById("cloudEmail")?.value||"").trim();
+  const password=document.getElementById("cloudPassword")?.value||"";
+  if(!email){toast("Enter your email");return}
+  if(password.length<6){toast("Password must be at least 6 characters");return}
+
+  cloudSetStatus("Creating account…",true);
+  const {data,error}=await sbClient.auth.signUp({email,password});
+  if(error){toast("☁️ "+cloudErrMessage(error));cloudSetStatus("Sign-up failed",true);return}
+  if(data?.session){
+    cloudUser=data.user;
+    cloudHandshakeUserId="";
+    toast("☁️ Cloud account created");
+    await beginCloudHandshake(true);
+    render();
+  }else{
+    toast("Check your email to finish sign-up");
+    cloudSetStatus("Email confirmation required",true);
+  }
+}
+async function cloudSignIn(){
+  if(!sbClient){toast("Cloud library is still loading");return}
+  const email=(document.getElementById("cloudEmail")?.value||"").trim();
+  const password=document.getElementById("cloudPassword")?.value||"";
+  if(!email || !password){toast("Enter email + password");return}
+
+  cloudSetStatus("Signing in…",true);
+  const {data,error}=await sbClient.auth.signInWithPassword({email,password});
+  if(error){toast("☁️ "+cloudErrMessage(error));cloudSetStatus("Sign-in failed",true);return}
+  cloudUser=data.user;
+  cloudHandshakeUserId="";
+  await beginCloudHandshake(true);
+  render();
+}
+async function cloudSignOut(){
+  if(!sbClient)return;
+  // Try one final save, but never block sign-out if network fails.
+  if(cloudReady && cloudUser)await pushStateToCloud(true);
+  await sbClient.auth.signOut();
+  cloudUser=null;
+  cloudReady=false;
+  cloudHandshakeUserId="";
+  pendingCloudRow=null;
+  cloudSetStatus("Signed out — local data remains",true);
+  toast("☁️ Signed out");
+  render();
+}
+async function cloudSyncNow(){
+  if(!cloudUser){toast("Sign in to cloud first");return}
+  cloudReady=true;
+  const ok=await pushStateToCloud(true);
+  if(ok)toast("☁️ Synced now");
+}
+function cloudSyncCard(){
+  const signed=!!cloudUser;
+  return `
+  <div class="sectionTitle">☁️ Cloud Save & Multi-device Sync</div>
+  <div class="card">
+    <div class="row between wrap">
+      <div>
+        <div style="font-weight:900">${signed?"Cloud account connected":"Local data is safe on this device"}</div>
+        <div class="muted small" style="margin-top:4px">${signed?esc(cloudUser.email||"Signed in"):"Sign in once to back up this RPG online."}</div>
+      </div>
+      <span class="badge ${signed&&cloudReady?"green":""}">${esc(cloudStatus)}</span>
+    </div>
+
+    ${signed?`
+      <div class="grid grid2" style="margin-top:12px">
+        <div class="kpi"><div class="l">Last cloud sync</div><div class="v" style="font-size:14px">${esc(cloudTimeLabel())}</div></div>
+        <div class="kpi"><div class="l">Storage mode</div><div class="v" style="font-size:14px">Local + Cloud</div></div>
+      </div>
+      <div class="muted tiny" style="margin-top:10px">Every normal app save stays instant in localStorage and is then uploaded to Supabase in the background.</div>
+      <div class="row wrap" style="margin-top:12px">
+        <button class="primary" onclick="cloudSyncNow()">☁️ Sync Now</button>
+        <button class="secondary" onclick="cloudSignOut()">Sign Out</button>
+      </div>
+    `:`
+      <div class="field" style="margin-top:12px"><label>Email</label>
+        <input class="input" id="cloudEmail" type="email" autocomplete="email" placeholder="your@email.com">
+      </div>
+      <div class="field" style="margin-top:9px"><label>Password</label>
+        <input class="input" id="cloudPassword" type="password" autocomplete="current-password" placeholder="Minimum 6 characters">
+      </div>
+      <div class="row wrap" style="margin-top:12px">
+        <button class="primary" onclick="cloudSignIn()">Sign In</button>
+        <button class="secondary" onclick="cloudSignUp()">Create Cloud Account</button>
+      </div>
+      <div class="tiny muted" style="margin-top:10px">First login with an empty cloud automatically uploads your EXISTING local progress. It does not reset the app.</div>
+    `}
+  </div>`;
+}
+async function initCloud(){
+  try{
+    if(!window.supabase?.createClient){
+      cloudSetStatus("Cloud library failed to load");
+      return;
+    }
+    sbClient=window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY,
+      {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}
+    );
+
+    const {data,error}=await sbClient.auth.getSession();
+    if(error)throw error;
+    cloudUser=data?.session?.user||null;
+
+    if(cloudUser){
+      cloudHandshakeUserId="";
+      await beginCloudHandshake(true);
+    }else{
+      cloudSetStatus("Not signed in");
+      render();
+    }
+
+    sbClient.auth.onAuthStateChange((event,session)=>{
+      // Avoid awaiting another Supabase call directly inside this callback.
+      setTimeout(async()=>{
+        const nextUser=session?.user||null;
+        const changed=(nextUser?.id||"")!==(cloudUser?.id||"");
+        cloudUser=nextUser;
+
+        if(!cloudUser){
+          cloudReady=false;
+          cloudHandshakeUserId="";
+          cloudSetStatus("Not signed in",true);
+          return;
+        }
+        if(changed)cloudHandshakeUserId="";
+        await beginCloudHandshake(false);
+        render();
+      },0);
+    });
+  }catch(e){
+    console.error("Cloud init failed:",e);
+    cloudSetStatus("Cloud unavailable — local data is safe",true);
+  }
+}
+
+window.addEventListener("online",()=>{
+  if(cloudUser){
+    cloudHandshakeUserId="";
+    beginCloudHandshake(true);
+  }
+});
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="hidden" && cloudReady && cloudUser){
+    pushStateToCloud(false);
+  }
+});
+
 function academicCount(d){return state.habits.filter(h=>h.type==="academic"&&d.habits[h.id]).length}
 function completedHabits(d){return state.habits.filter(h=>d.habits[h.id]).length}
 function studyMins(d){return (d.study||[]).reduce((a,b)=>a+(+b.minutes||0),0)}
@@ -238,7 +597,7 @@ function errorXP(){return state.mistakes.filter(x=>x.repaired).length*10}
 function totalXP(){return Object.values(state.daily).reduce((s,d)=>s+xpForDay(d),0)+mockXP()+errorXP()}
 function totalCoins(){return Object.values(state.daily).reduce((s,d)=>s+coinsForDay(d),0)+state.mocks.length*8-state.purchases.reduce((s,p)=>s+p.cost,0)}
 function level(){
-  const xp=totalXP(), lvls=[[16000,10,"270 Club"],[12500,9,"CLC Finalist"],[9500,8,"CLC Raider"],[7000,7,"CLC Hunter"],[5000,6,"Contender"],[3500,5,"Strategist"],[2200,4,"Challenger"],[1200,3,"Grinder"],[500,2,"Cadet"],[0,1,"Rookie"]];
+  const xp=totalXP(), lvls=[[16000,10,"290+ Club"],[12500,9,"CLC Finalist"],[9500,8,"CLC Raider"],[7000,7,"CLC Hunter"],[5000,6,"Contender"],[3500,5,"Strategist"],[2200,4,"Challenger"],[1200,3,"Grinder"],[500,2,"Cadet"],[0,1,"Rookie"]];
   return lvls.find(x=>xp>=x[0]);
 }
 function qualifiesStreak(d){return completedHabits(d)>=state.settings.streakThreshold || !!d.mainQuestRewardEarned}
@@ -530,7 +889,7 @@ function renderHome(){
     <div class="muted small" style="margin-top:7px">${totalXP()} XP • ${totalCoins()} 🪙 • ${streak()} day streak 🔥</div></div>
     <div style="text-align:right"><div class="tiny muted">Boss power</div><div class="big">${Math.round(bossPower())}%</div></div></div>
     <div class="progress" style="margin-top:14px"><i style="width:${bossPower()}%"></i></div>
-    <div class="tiny muted" style="margin-top:7px">${daysLeft()} mission days left • Target ${state.profile.targetScore}/300</div>
+    <div class="tiny muted" style="margin-top:7px">${daysLeft()} mission days left • Target ${state.profile.targetScore}+/300</div>
   </div>
 
   <div class="sectionTitle">👑 Main Quest — manually chosen deep task</div>
@@ -732,6 +1091,7 @@ function renderStats(){
   </div>
   <div class="sectionTitle">🗺️ Subject Mastery</div><div class="card monthBars">${mastery.map(x=>`<div class="monthBar"><div><div class="name">${esc(x.subject)}</div><div class="progress" style="margin-top:4px"><i style="width:${x.value}%"></i></div></div><div class="small" style="font-weight:900;text-align:right">${Math.round(x.value)}%</div></div>`).join("")}</div>
   <div class="sectionTitle">🪙 Reward Shop</div><div class="list">${state.rewards.map((r,i)=>`<div class="listItem"><div class="row between"><div><div class="topicName">${esc(r.name)}</div><div class="topicSub">${r.cost} coins</div></div><button class="${totalCoins()>=r.cost?"primary":"secondary"}" onclick="buyReward(${i})">Claim</button></div></div>`).join("")}</div>
+  ${cloudSyncCard()}
   ${calendarSyncCard()}
   <div class="sectionTitle">📲 Install App</div><div class="card"><div class="muted small">When hosted on HTTPS, install this PWA to your phone home screen for an app-like experience.</div><button class="primary" id="installBtn" style="margin-top:10px" onclick="installPWA()">Install / Add to Home Screen</button></div>
   <div class="sectionTitle">⚙️ Settings & Backup</div><div class="card"><div class="formGrid">
@@ -822,10 +1182,10 @@ function openAddTopic(){modal(`<h2>Add Custom Topic</h2><div class="field"><labe
 <button class="primary" style="width:100%;margin-top:12px" onclick="addTopic()">Add to Queue</button>`)}
 function addTopic(){const subject=document.getElementById("naSub").value||"Other",group=document.getElementById("naGroup").value||"Custom",detail=document.getElementById("naName").value||"New Topic";state.topics.push({id:"t"+Date.now(),subject,group,detail,name:`${group} - ${detail}`,priority:"P1",mastery:0,status:"Not Started",weakness:15,lastTouched:"",due:"",active:true});save();closeModal();render()}
 function buyReward(i){const r=state.rewards[i];if(totalCoins()<r.cost){toast("🪙 Not enough coins yet");return}state.purchases.push({name:r.name,cost:r.cost,date:todayISO()});save();toast("🎁 Reward unlocked — guilt-free!");confetti();render()}
-function saveSettings(){state.profile.name=document.getElementById("setName").value;state.profile.targetScore=+document.getElementById("setTarget").value||270;state.profile.examDate=document.getElementById("setExam").value;state.settings.streakThreshold=clamp(+document.getElementById("setStreak").value||6,1,10);save();toast("Settings saved");render()}
+function saveSettings(){state.profile.name=document.getElementById("setName").value;state.profile.targetScore=+document.getElementById("setTarget").value||290;state.profile.examDate=document.getElementById("setExam").value;state.settings.streakThreshold=clamp(+document.getElementById("setStreak").value||6,1,10);save();toast("Settings saved");render()}
 function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:"application/json"}));a.download=`CLC_RPG_Backup_${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
-function importData(el){const f=el.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{state=JSON.parse(rd.result);save();toast("Backup restored");render()}catch(e){toast("Invalid backup file")}};rd.readAsText(f)}
-function resetApp(){if(confirm("Reset all app data? Export a backup first if needed.")){state=defaultState();save();render();toast("Fresh mission created")}}
+function importData(el){const f=el.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{state=normalizeManualQuestState(normalizeLegacyTarget(normalizeSyllabusTopics(JSON.parse(rd.result))));save();toast("Backup restored • cloud sync queued");render()}catch(e){toast("Invalid backup file")}};rd.readAsText(f)}
+function resetApp(){if(confirm(cloudUser?"Reset ALL app data on this device AND sync the reset to cloud? Export a backup first.":"Reset all app data? Export a backup first if needed.")){state=defaultState();save();render();toast("Fresh mission created")}}
 function modal(x){document.getElementById("modalBody").innerHTML=x;document.getElementById("modal").classList.add("open")}
 function closeModal(){document.getElementById("modal").classList.remove("open")}
 document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()})
@@ -849,12 +1209,15 @@ async function installPWA(){
 }
 document.querySelectorAll(".navBtn").forEach(b=>b.onclick=()=>showPage(b.dataset.page));
 
-// One-file v4 deployment helper: clear ONLY the old PWA cache, never localStorage/user progress.
-if("caches" in window && !localStorage.getItem("clc-v4-cache-refreshed")){
-  caches.delete("clc-rpg-v3").finally(()=>localStorage.setItem("clc-v4-cache-refreshed","1"));
+// One-file cloud release helper: clear PWA caches only. NEVER delete app localStorage/progress.
+if("caches" in window && !localStorage.getItem("clc-cloud1-cache-refreshed")){
+  caches.keys().then(keys=>Promise.all(
+    keys.filter(k=>k.startsWith("clc-rpg")).map(k=>caches.delete(k))
+  )).finally(()=>localStorage.setItem("clc-cloud1-cache-refreshed","1"));
 }
 
 if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
-day();save();render();
+day();save(false);render();
+initCloud();
 </script>
 </body></html>
