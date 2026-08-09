@@ -136,6 +136,9 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_DiEwOyINUG66c6uwas3_9Q_jBjRUZPZ
 const CLOUD_BIND_KEY = "clc270-rpg-cloud-user";
 const CLOUD_LAST_SYNC_KEY = "clc270-rpg-cloud-last-sync";
 const CLOUD_LOCAL_CHANGE_KEY = "clc270-rpg-local-change";
+const RECOVERY_KEY = "clc270-rpg-recovery-v1";
+const RECOVERY_LAST_KEY = "clc270-rpg-recovery-last-ts";
+const DEVICE_KEY = "clc270-rpg-device-id";
 
 const iso = d => {
   const x = new Date(d);
@@ -190,12 +193,20 @@ function migrateOldState(){
   return fresh;
 }
 function normalizeSyllabusTopics(st){
-  const oldByName=new Map((st.topics||[]).map(t=>[String(t.name||"").toLowerCase(),t]));
-  st.topics=SEED.topics.map(seed=>{
+  const existing=Array.isArray(st.topics)?st.topics:[];
+  const oldByName=new Map(existing.map(t=>[String(t.name||"").toLowerCase(),t]));
+  const seedNames=new Set(SEED.topics.map(t=>String(t.name||"").toLowerCase()));
+
+  const seeded=SEED.topics.map(seed=>{
     const old=oldByName.get(seed.name.toLowerCase());
-    return old?{...seed,mastery:old.mastery||0,status:old.status||"Not Started",weakness:old.weakness??15,
+    return old?{...seed,mastery:+old.mastery||0,status:old.status||"Not Started",weakness:old.weakness??15,
       lastTouched:old.lastTouched||"",due:old.due||"",priority:old.priority||seed.priority,active:old.active!==false}:seed;
   });
+
+  // Preserve custom/user-added topics instead of silently dropping them on reload.
+  const custom=existing.filter(t=>!seedNames.has(String(t.name||"").toLowerCase()));
+  st.topics=[...seeded,...custom];
+
   st.settings={streakThreshold:6,mainQuestRewardXP:60,habitXP:10,focusSubject:"English",googleClientId:"",calendarId:"primary",lastCalendarSync:"",...(st.settings||{})};
   return st;
 }
@@ -231,6 +242,189 @@ function normalizeManualQuestState(st){
   }
   return st;
 }
+
+function deepClone(x){
+  try{return structuredClone(x)}catch(e){return JSON.parse(JSON.stringify(x))}
+}
+function getDeviceId(){
+  let id=localStorage.getItem(DEVICE_KEY);
+  if(!id){
+    id="dev-"+Date.now()+"-"+Math.random().toString(36).slice(2,10);
+    localStorage.setItem(DEVICE_KEY,id);
+  }
+  return id;
+}
+function safeJSONParse(s,fallback=null){
+  try{return JSON.parse(s)}catch(e){return fallback}
+}
+function saveRecoverySnapshot(reason, snapshot){
+  try{
+    const snap=deepClone(snapshot||state);
+    const ring=safeJSONParse(localStorage.getItem(RECOVERY_KEY)||"[]",[]);
+    ring.unshift({ts:Date.now(),reason:String(reason||"snapshot"),state:snap});
+    localStorage.setItem(RECOVERY_KEY,JSON.stringify(ring.slice(0,6)));
+    localStorage.setItem(RECOVERY_LAST_KEY,String(Date.now()));
+  }catch(e){
+    console.warn("Recovery snapshot skipped:",e);
+  }
+}
+function maybeRecoverySnapshot(reason){
+  const last=+(localStorage.getItem(RECOVERY_LAST_KEY)||0);
+  if(Date.now()-last>5*60*1000)saveRecoverySnapshot(reason||"auto",state);
+}
+function recordKey(x,fields=[]){
+  if(!x)return "";
+  if(x.id!==undefined && x.id!==null && String(x.id)!=="")return "id:"+String(x.id);
+  return "fp:"+fields.map(f=>String(x[f]??"")).join("|");
+}
+function mergeRecordArrays(localArr,remoteArr,fields=[],mergeFn=null){
+  const map=new Map();
+  for(const x of (remoteArr||[])){
+    const k=recordKey(x,fields);
+    map.set(k,deepClone(x));
+  }
+  for(const x of (localArr||[])){
+    const k=recordKey(x,fields);
+    const old=map.get(k);
+    map.set(k,old?(mergeFn?mergeFn(x,old):{...old,...deepClone(x)}):deepClone(x));
+  }
+  return [...map.values()];
+}
+function questTimestamp(q){
+  return +(q?.selectedAt||q?.created||q?.clearedAt||0);
+}
+function chooseNewerQuest(a,b){
+  if(!a)return b?deepClone(b):null;
+  if(!b)return deepClone(a);
+  return questTimestamp(a)>=questTimestamp(b)?deepClone(a):deepClone(b);
+}
+function topicProgressScore(t){
+  const ranks={"Not Started":0,"Learning":1,"Practicing":2,"Revising":3,"Exam Ready":4};
+  const d=t?.lastTouched?Date.parse(t.lastTouched+"T00:00:00")||0:0;
+  return (ranks[t?.status]||0)*10000000000000 + (+t?.mastery||0)*10000000000 + d;
+}
+function mergeTopics(localTopics,remoteTopics){
+  const map=new Map();
+  const key=t=>String(t?.id||t?.name||`${t?.subject}|${t?.group}|${t?.detail}`).toLowerCase();
+
+  for(const t of (remoteTopics||[]))map.set(key(t),deepClone(t));
+
+  for(const lt of (localTopics||[])){
+    const k=key(lt),rt=map.get(k);
+    if(!rt){map.set(k,deepClone(lt));continue}
+
+    const chosen=topicProgressScore(lt)>=topicProgressScore(rt)?lt:rt;
+    const other=chosen===lt?rt:lt;
+    map.set(k,{
+      ...deepClone(other),
+      ...deepClone(chosen),
+      // Never lose a recorded mastery/status improvement merely because another copy is stale.
+      mastery:Math.max(+lt.mastery||0,+rt.mastery||0),
+      active:lt.active!==false || rt.active!==false,
+      lastTouched:(String(lt.lastTouched||"")>=String(rt.lastTouched||""))?(lt.lastTouched||rt.lastTouched):(rt.lastTouched||lt.lastTouched)
+    });
+  }
+  return [...map.values()];
+}
+function mergeStatesNonDestructive(localState,remoteState){
+  const L=localState&&typeof localState==="object"?deepClone(localState):defaultState();
+  const R=remoteState&&typeof remoteState==="object"?deepClone(remoteState):defaultState();
+
+  const M={...R,...L};
+
+  // Profile/settings: keep meaningful local values, fill blanks from cloud.
+  M.profile={...(R.profile||{}),...(L.profile||{})};
+  M.settings={...(R.settings||{}),...(L.settings||{})};
+  for(const [k,v] of Object.entries(R.settings||{})){
+    if(M.settings[k]===undefined || M.settings[k]===null || M.settings[k]==="")M.settings[k]=v;
+  }
+
+  // Habit definitions: keep current app list, append any custom/older definitions.
+  M.habits=mergeRecordArrays(L.habits,R.habits,["name"],(l,r)=>({...r,...l}));
+
+  // Daily history is merged PER DAY rather than replacing the entire timeline.
+  M.daily={};
+  const dates=new Set([...Object.keys(R.daily||{}),...Object.keys(L.daily||{})]);
+  for(const date of dates){
+    const l=L.daily?.[date]||{}, r=R.daily?.[date]||{};
+    const habitIds=new Set([...Object.keys(r.habits||{}),...Object.keys(l.habits||{})]);
+    const habits={};
+    for(const id of habitIds)habits[id]=!!(l.habits?.[id]||r.habits?.[id]);
+
+    M.daily[date]={
+      ...r,...l,
+      habits,
+      study:mergeRecordArrays(l.study,r.study,["subject","task","minutes","questions","correct"],(a,b)=>({...b,...a})),
+      mainQuest:chooseNewerQuest(l.mainQuest,r.mainQuest),
+      mainQuestCompletion:chooseNewerQuest(l.mainQuestCompletion,r.mainQuestCompletion),
+      mainQuestRewardEarned:!!(l.mainQuestRewardEarned||r.mainQuestRewardEarned),
+      note:l.note||r.note||""
+    };
+  }
+
+  M.mocks=mergeRecordArrays(L.mocks,R.mocks,["date","name","score","correct","wrong"],(l,r)=>({...r,...l,pb:!!(l.pb||r.pb)}));
+  M.mistakes=mergeRecordArrays(L.mistakes,R.mistakes,["date","subject","topic","type","fix"],(l,r)=>({
+    ...r,...l,repaired:!!(l.repaired||r.repaired)
+  }));
+  M.purchases=mergeRecordArrays(L.purchases,R.purchases,["date","name","cost"],(l,r)=>({...r,...l}));
+  M.rewards=mergeRecordArrays(L.rewards,R.rewards,["name","cost"],(l,r)=>({...r,...l}));
+
+  M.revisionSchedule={...(R.revisionSchedule||{}),...(L.revisionSchedule||{})};
+  M.revisionDone={...(R.revisionDone||{})};
+  for(const [d,v] of Object.entries(L.revisionDone||{}))M.revisionDone[d]=!!(v||M.revisionDone[d]);
+
+  M.topics=mergeTopics(L.topics,R.topics);
+
+  // Latest active Main Quest survives.
+  M.activeMainQuest=chooseNewerQuest(L.activeMainQuest,R.activeMainQuest);
+
+  M._sync={
+    updatedAt:Date.now(),
+    deviceId:getDeviceId(),
+    mergeMode:"non-destructive-v1"
+  };
+
+  return M;
+}
+function dataCounts(st){
+  const s=st||{};
+  return {
+    mistakes:(s.mistakes||[]).length,
+    studies:Object.values(s.daily||{}).reduce((n,d)=>n+(d.study||[]).length,0),
+    mocks:(s.mocks||[]).length,
+    days:Object.keys(s.daily||{}).length,
+    topics:(s.topics||[]).length
+  };
+}
+function recoverOlderLocalData(){
+  const before=dataCounts(state);
+  let merged=deepClone(state),found=0;
+
+  const keys=["clc270-rpg-v3","clc270-rpg-v2"];
+  for(const k of keys){
+    const old=safeJSONParse(localStorage.getItem(k)||"null",null);
+    if(old){merged=mergeStatesNonDestructive(merged,old);found++}
+  }
+
+  const ring=safeJSONParse(localStorage.getItem(RECOVERY_KEY)||"[]",[]);
+  for(const snap of ring){
+    if(snap?.state){merged=mergeStatesNonDestructive(merged,snap.state);found++}
+  }
+
+  if(!found){toast("🛟 No older local copies found");return}
+
+  saveRecoverySnapshot("before-manual-recovery",state);
+  state=normalizeManualQuestState(normalizeLegacyTarget(normalizeSyllabusTopics(merged)));
+  save();
+  const after=dataCounts(state);
+  toast(`🛟 Recovery merged • Vault ${before.mistakes}→${after.mistakes} • Study ${before.studies}→${after.studies}`);
+  render();
+}
+function createSafetySnapshot(){
+  saveRecoverySnapshot("manual-safety-snapshot",state);
+  toast("🛡️ Safety snapshot saved on this device");
+}
+
 let state;
 try{
   const saved=JSON.parse(localStorage.getItem(KEY)||"null");
@@ -240,9 +434,13 @@ let googleCalendarToken="";
 let googleCalendarTokenExpiresAt=0;
 let googleTokenClient=null;
 function save(markDirty=true){
+  if(markDirty){
+    state._sync={...(state._sync||{}),updatedAt:Date.now(),deviceId:getDeviceId(),mergeMode:"non-destructive-v1"};
+  }
   localStorage.setItem(KEY,JSON.stringify(state));
   if(markDirty){
     localStorage.setItem(CLOUD_LOCAL_CHANGE_KEY,String(Date.now()));
+    maybeRecoverySnapshot("auto-local-edit");
     scheduleCloudSync();
   }
 }
@@ -294,13 +492,29 @@ async function pushStateToCloud(force=false){
   if(cloudSyncing && !force)return false;
 
   cloudSyncing=true;
-  cloudSetStatus("Saving to cloud…",true);
+  cloudSetStatus("Merging + saving cloud…",true);
   try{
-    const payload={
-      user_id:cloudUser.id,
-      state:state,
-      schema_version:4
-    };
+    // Snapshot current device state BEFORE touching cloud.
+    saveRecoverySnapshot("before-cloud-sync",state);
+
+    let remote=null;
+    const {data:row,error:readError}=await sbClient
+      .from("app_state")
+      .select("state,updated_at,schema_version")
+      .eq("user_id",cloudUser.id)
+      .maybeSingle();
+    if(readError)throw readError;
+    if(row?.state)remote=normalizeIncomingCloudState(row.state);
+
+    // Critical fix: NEVER replace local state wholesale.
+    // Merge logs/vaults/history first, then persist the union to BOTH local and cloud.
+    state=normalizeManualQuestState(normalizeLegacyTarget(normalizeSyllabusTopics(
+      remote?mergeStatesNonDestructive(state,remote):state
+    )));
+    state._sync={...(state._sync||{}),updatedAt:Date.now(),deviceId:getDeviceId(),mergeMode:"non-destructive-v1"};
+    localStorage.setItem(KEY,JSON.stringify(state));
+
+    const payload={user_id:cloudUser.id,state:state,schema_version:5};
     const {data,error}=await sbClient
       .from("app_state")
       .upsert(payload,{onConflict:"user_id"})
@@ -310,11 +524,11 @@ async function pushStateToCloud(force=false){
     if(error)throw error;
     cloudMarkSynced(data?.updated_at);
     cloudReady=true;
-    cloudSetStatus("Cloud saved ✓",true);
+    cloudSetStatus("Cloud merged & saved ✓",true);
     return true;
   }catch(e){
     cloudSetStatus("Cloud pending — local data is safe",true);
-    console.error("Cloud push failed:",e);
+    console.error("Cloud sync failed:",e);
     if(force)toast("☁️ "+cloudErrMessage(e));
     return false;
   }finally{
@@ -327,17 +541,20 @@ function normalizeIncomingCloudState(raw){
 }
 function applyCloudRow(row){
   if(!row?.state)return;
-  state=normalizeIncomingCloudState(row.state);
-  // IMPORTANT: write downloaded state locally WITHOUT marking it as a new edit.
+  saveRecoverySnapshot("before-cloud-merge",state);
+  const remote=normalizeIncomingCloudState(row.state);
+  state=normalizeManualQuestState(normalizeLegacyTarget(normalizeSyllabusTopics(
+    mergeStatesNonDestructive(state,remote)
+  )));
   save(false);
   cloudMarkSynced(row.updated_at);
   if(cloudUser?.id)localStorage.setItem(CLOUD_BIND_KEY,cloudUser.id);
   cloudReady=true;
   pendingCloudRow=null;
   closeModal();
-  cloudSetStatus("Cloud loaded ✓");
+  cloudSetStatus("Cloud merged ✓");
   render();
-  toast("☁️ Cloud progress loaded");
+  toast("☁️ Cloud + device data merged");
 }
 async function acceptCloudState(){
   if(!pendingCloudRow)return;
@@ -383,13 +600,11 @@ async function beginCloudHandshake(force=false){
   if(!sbClient || !cloudUser)return;
   if(cloudHandshakeUserId===cloudUser.id && cloudReady && !force)return;
   cloudHandshakeUserId=cloudUser.id;
-  cloudSetStatus("Checking cloud…",true);
+  cloudSetStatus("Checking + merging cloud…",true);
 
   try{
     const row=await fetchCloudRow();
 
-    // FIRST EVER CLOUD SETUP:
-    // Empty DB row means current local progress wins automatically.
     if(!row){
       cloudReady=true;
       localStorage.setItem(CLOUD_BIND_KEY,cloudUser.id);
@@ -401,36 +616,21 @@ async function beginCloudHandshake(force=false){
       return;
     }
 
-    // NEW PHONE / NEW BROWSER:
-    // Never silently overwrite local or cloud data.
-    if(!cloudIsBoundToCurrentUser()){
-      cloudReady=false;
-      cloudSetStatus("Choose local or cloud copy",true);
-      showCloudChoice(row,false);
-      return;
-    }
+    // Critical rule: cloud is NOT allowed to replace the full local state.
+    // We take the union of both histories, then upload that merged truth.
+    saveRecoverySnapshot("before-login-cloud-merge",state);
+    const remote=normalizeIncomingCloudState(row.state);
+    state=normalizeManualQuestState(normalizeLegacyTarget(normalizeSyllabusTopics(
+      mergeStatesNonDestructive(state,remote)
+    )));
+    save(false);
+    localStorage.setItem(CLOUD_BIND_KEY,cloudUser.id);
+    cloudReady=true;
 
-    // SAME DEVICE: resolve safely using last-sync timestamps.
-    const lastSync=+(localStorage.getItem(CLOUD_LAST_SYNC_KEY)||0);
-    const localChanged=+(localStorage.getItem(CLOUD_LOCAL_CHANGE_KEY)||0);
-    const cloudChanged=Date.parse(row.updated_at)||0;
-    const epsilon=1500;
-    const localDirty=localChanged>lastSync+epsilon;
-    const cloudDirty=cloudChanged>lastSync+epsilon;
-
-    if(localDirty && cloudDirty){
-      cloudReady=false;
-      cloudSetStatus("Sync conflict — choose copy",true);
-      showCloudChoice(row,true);
-    }else if(cloudDirty){
-      applyCloudRow(row);
-    }else if(localDirty){
-      cloudReady=true;
-      await pushStateToCloud(true);
-    }else{
-      cloudReady=true;
-      cloudMarkSynced(row.updated_at);
-      cloudSetStatus("Cloud synced ✓",true);
+    const ok=await pushStateToCloud(true);
+    if(ok){
+      cloudSetStatus("Cloud + device merged ✓",true);
+      render();
     }
   }catch(e){
     cloudReady=false;
@@ -439,6 +639,7 @@ async function beginCloudHandshake(force=false){
     toast("☁️ "+cloudErrMessage(e));
   }
 }
+
 async function cloudSignUp(){
   if(!sbClient){toast("Cloud library is still loading");return}
   const email=(document.getElementById("cloudEmail")?.value||"").trim();
@@ -511,9 +712,12 @@ function cloudSyncCard(){
         <div class="kpi"><div class="l">Last cloud sync</div><div class="v" style="font-size:14px">${esc(cloudTimeLabel())}</div></div>
         <div class="kpi"><div class="l">Storage mode</div><div class="v" style="font-size:14px">Local + Cloud</div></div>
       </div>
-      <div class="muted tiny" style="margin-top:10px">Every normal app save stays instant in localStorage and is then uploaded to Supabase in the background.</div>
+      <div class="muted tiny" style="margin-top:10px">Every save stays local first. Cloud sync now MERGES histories instead of replacing one copy with another.</div>
+      <div class="tiny" style="margin-top:9px;font-weight:800">🧠 Data health: ${dataCounts(state).mistakes} vaults • ${dataCounts(state).studies} study blocks • ${dataCounts(state).mocks} mocks • ${dataCounts(state).days} tracked days</div>
       <div class="row wrap" style="margin-top:12px">
-        <button class="primary" onclick="cloudSyncNow()">☁️ Sync Now</button>
+        <button class="primary" onclick="cloudSyncNow()">☁️ Merge & Sync Now</button>
+        <button class="ghost" onclick="createSafetySnapshot()">🛡️ Safety Snapshot</button>
+        <button class="ghost" onclick="recoverOlderLocalData()">🛟 Recover Older Data</button>
         <button class="secondary" onclick="cloudSignOut()">Sign Out</button>
       </div>
     `:`
@@ -527,7 +731,11 @@ function cloudSyncCard(){
         <button class="primary" onclick="cloudSignIn()">Sign In</button>
         <button class="secondary" onclick="cloudSignUp()">Create Cloud Account</button>
       </div>
-      <div class="tiny muted" style="margin-top:10px">First login with an empty cloud automatically uploads your EXISTING local progress. It does not reset the app.</div>
+      <div class="tiny muted" style="margin-top:10px">First login merges local + cloud; neither copy is allowed to erase the other's history.</div>
+      <div class="row wrap" style="margin-top:10px">
+        <button class="ghost" onclick="createSafetySnapshot()">🛡️ Safety Snapshot</button>
+        <button class="ghost" onclick="recoverOlderLocalData()">🛟 Recover Older Data</button>
+      </div>
     `}
   </div>`;
 }
@@ -1228,7 +1436,9 @@ if("caches" in window && !localStorage.getItem("clc-cloud1-cache-refreshed")){
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update().catch(()=>{})).catch(()=>{});
 }
-day();save(false);render();
+day();save(false);
+maybeRecoverySnapshot("app-start");
+render();
 initCloud();
 </script>
 </body></html>
