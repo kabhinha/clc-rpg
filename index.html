@@ -127,6 +127,7 @@ const SEED = {"habits": [{"id": "gym", "name": "Gym", "icon": "🏋️", "target
 const KEY = "clc270-rpg-v4";
 const OLD_KEY = "clc270-rpg-v3";
 const TODAY_OVERRIDE = ""; // leave blank in normal use
+const APP_BUILD = "290.3";
 
 // Cloud persistence (frontend-safe values only; NO secret/service-role key here)
 const SUPABASE_URL = "https://wjdammmqwnkzaxdiageo.supabase.co";
@@ -1224,7 +1225,9 @@ if("caches" in window && !localStorage.getItem("clc-cloud1-cache-refreshed")){
   )).finally(()=>localStorage.setItem("clc-cloud1-cache-refreshed","1"));
 }
 
-if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update().catch(()=>{})).catch(()=>{});
+}
 day();save(false);render();
 initCloud();
 </script>
